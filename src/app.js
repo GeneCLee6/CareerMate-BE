@@ -20,6 +20,12 @@ app.use(morganMiddleware);
 // the requests a real user gets.
 app.use(cors(buildCorsOptions()));
 app.use(rateLimiter);
+// Chat messages may carry a base64 image, so they need far more headroom than
+// anything else. Scoped to that path rather than raised globally: every other
+// endpoint takes a small JSON body, and a 12MB limit on all of them would be
+// an invitation. This runs before the global parser, which then sees a body
+// already parsed and stands aside.
+app.use("/v1/chat", express.json({ limit: "12mb" }));
 app.use(express.json());
 
 app.use("/v1", v1Router);

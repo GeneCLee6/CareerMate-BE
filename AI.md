@@ -110,6 +110,18 @@ carries no instructions. That last sentence is not decoration: a resume is
 user-uploaded text landing in the system prompt, so one containing "ignore
 your instructions" has to read as a curiosity in someone's CV.
 
+**Attachments arrive as content blocks.** An image becomes a vision block the
+model reads directly — a screenshot of a job ad or a rejection email is
+something it can genuinely discuss. A PDF is turned into text first, by the
+same extractor the resume upload uses, so there is one way of reading a PDF in
+the codebase rather than two. Files come before the typed question in the
+block list, so the model reads the question already knowing what it is looking
+at.
+
+Nothing is stored: the bytes live for one request, and only a filename and
+type survive. On a later turn the model is told plainly that the file is gone
+rather than being left to guess what "this" referred to.
+
 **A resume that could not be read says so.** A scan is a picture of
 characters, not characters, so nothing can be extracted. Those files are
 listed by name with an explicit note to ask the user rather than guess —

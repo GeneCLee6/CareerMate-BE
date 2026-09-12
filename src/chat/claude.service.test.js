@@ -257,3 +257,73 @@ describe("isConfigured", () => {
         expect(claudeService.isConfigured()).toBe(true);
     });
 });
+
+describe("attachments in the message list", () => {
+    const IMAGE = {
+        type: "image",
+        source: { type: "base64", media_type: "image/png", data: "AAAA" },
+    };
+
+    it("puts the files before the question on the newest turn", () => {
+        const mapped = claudeService.toApiMessages(
+            [{ role: "user", content: "what is this?" }],
+            [IMAGE]
+        );
+
+        expect(mapped[0].content[0].type).toBe("image");
+        expect(mapped[0].content[1]).toEqual({
+            type: "text",
+            text: "what is this?",
+        });
+    });
+
+    it("omits the text block when nothing was typed", () => {
+        // The API rejects an empty text block, and attaching a file with no
+        // message is a legitimate way to ask "what is this?".
+        const mapped = claudeService.toApiMessages(
+            [{ role: "user", content: "" }],
+            [IMAGE]
+        );
+
+        expect(mapped[0].content).toEqual([IMAGE]);
+    });
+
+    it("leaves earlier turns as plain strings", () => {
+        const mapped = claudeService.toApiMessages(
+            [
+                { role: "user", content: "first" },
+                { role: "assistant", content: "reply" },
+                { role: "user", content: "now look at this" },
+            ],
+            [IMAGE]
+        );
+
+        expect(mapped[0].content).toBe("first");
+        expect(mapped[1].content).toBe("reply");
+        expect(Array.isArray(mapped[2].content)).toBe(true);
+    });
+
+    it("tells the model an earlier attachment is gone", () => {
+        // Attachments are not stored, so a replayed turn would otherwise
+        // leave the model guessing what the user was pointing at.
+        const mapped = claudeService.toApiMessages([
+            {
+                role: "user",
+                content: "what about this one?",
+                attachments: [{ fileName: "old.png" }],
+            },
+            { role: "user", content: "and now?" },
+        ]);
+
+        expect(mapped[0].content).toContain("old.png");
+        expect(mapped[0].content).toContain("no longer available");
+        expect(mapped[1].content).toBe("and now?");
+    });
+
+    it("is unchanged when nothing is attached at all", () => {
+        const mapped = claudeService.toApiMessages([
+            { role: "user", content: "hi" },
+        ]);
+        expect(mapped).toEqual([{ role: "user", content: "hi" }]);
+    });
+});

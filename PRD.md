@@ -91,7 +91,7 @@ client ──③ create the resource with fileKey──► server ──► vali
 | `GET /chat/status` | Report whether the server has an AI key |
 | `GET /chat/conversations` | List the user's conversations |
 | `GET /chat/conversations/:id/messages` | Read one conversation |
-| `POST /chat/messages` | Send a message, creating a conversation |
+| `POST /chat/messages` | Send a message, with up to 3 attachments, creating a conversation |
 | `POST /chat/conversations/:id/messages` | Continue an existing conversation |
 | `DELETE /chat/conversations/:id` | Delete a conversation and its messages |
 
@@ -110,6 +110,12 @@ Behavioural requirements:
   reports `configured: false`, and sending returns **503**.
 - If the reply fails, the user's message is **rolled back**. A conversation
   must never contain a question with no answer.
+- A message may carry up to 3 attachments, 5 MB each. Images are read by the
+  model directly; PDFs are turned into text by the same extractor the resume
+  upload uses. A message that is only an attachment is valid.
+- Attachment bytes are **never stored** — only a filename and type, so a
+  reloaded transcript can still show what was sent. Replayed turns tell the
+  model the file is no longer available rather than leaving it to guess.
 
 Model choice and parameters are documented in `ARCHITECTURE.md` §5.
 

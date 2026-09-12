@@ -5,13 +5,20 @@ const User = require("../users/user.model");
 const claudeService = require("./claude.service");
 const NotFoundException = require("../exceptions/NotFound.exception");
 const { isObjectId } = require("../utils/objectId");
+const { prepare } = require("./attachments");
 
 /** How many earlier turns to replay. Older context is dropped, not summarised. */
 const HISTORY_LIMIT = 40;
 
-/** Derives a readable conversation title from the opening question. */
-function titleFrom(content) {
+/**
+ * Derives a readable conversation title from the opening question, falling
+ * back to the attachment when the message is a file with nothing typed.
+ */
+function titleFrom(content, attachments = []) {
     const firstLine = content.trim().split("\n")[0];
+    if (!firstLine) {
+        return attachments[0]?.fileName ?? "New conversation";
+    }
     return firstLine.length > 60 ? `${firstLine.slice(0, 57)}...` : firstLine;
 }
 
@@ -58,7 +65,11 @@ const getMessages = async (req, res) => {
  */
 const sendMessage = async (req, res) => {
     const userId = req.user.id;
-    const { content } = req.body;
+    const { content, attachments } = req.body;
+
+    // Validate and decode before anything is written: a rejected attachment
+    // should leave no conversation and no message behind.
+    const { blocks, metadata } = await prepare(attachments);
 
     let conversation;
     if (req.params.id) {
@@ -66,7 +77,7 @@ const sendMessage = async (req, res) => {
     } else {
         conversation = await Conversation.create({
             user: userId,
-            title: titleFrom(content),
+            title: titleFrom(content, metadata),
         });
     }
 
@@ -75,6 +86,7 @@ const sendMessage = async (req, res) => {
         user: userId,
         role: "user",
         content,
+        attachments: metadata,
     });
 
     // Replay the tail of the conversation, oldest first.
@@ -90,7 +102,12 @@ const sendMessage = async (req, res) => {
 
     let reply;
     try {
-        reply = await claudeService.createReply({ user, resumes, history });
+        reply = await claudeService.createReply({
+            user,
+            resumes,
+            history,
+            attachmentBlocks: blocks,
+        });
     } catch (error) {
         // Don't leave a user turn with no answer hanging in the transcript.
         await Message.deleteOne({ _id: userMessage._id });
