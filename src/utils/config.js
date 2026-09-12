@@ -13,6 +13,9 @@ const optionalConfigs = {
     JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",
     AWS_REGION: process.env.AWS_REGION || "ap-southeast-2",
     CLOUDFRONT_DOMAIN: process.env.CLOUDFRONT_DOMAIN,
+    // Optional on purpose: the app boots without it and the chat routes
+    // report themselves as unconfigured rather than the server failing.
+    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
 };
 
 for (const key in requiredConfigs) {
