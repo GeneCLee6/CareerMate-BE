@@ -6,6 +6,8 @@ const {
     loginSchema,
     forgotPasswordSchema,
     verifyCodeSchema,
+    verifyEmailSchema,
+    resendVerificationSchema,
     resetPasswordSchema,
 } = require("./auth.validation");
 const authGuard = require("../middleware/authGuard.middleware");
@@ -17,6 +19,16 @@ authRouter.post(
     "/register",
     validateBody(registerSchema),
     authController.register,
+);
+authRouter.post(
+    "/verify-email",
+    validateBody(verifyEmailSchema),
+    authController.verifyEmail,
+);
+authRouter.post(
+    "/resend-verification",
+    validateBody(resendVerificationSchema),
+    authController.resendVerification,
 );
 authRouter.post("/login", validateBody(loginSchema), authController.login);
 authRouter.post(

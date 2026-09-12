@@ -43,8 +43,38 @@ const userSchema = new mongoose.Schema(
             enum: ["user", "admin"],
             default: "user",
         },
+        /** Null until the address is confirmed; login is blocked before that. */
+        emailVerifiedAt: {
+            type: Date,
+            default: null,
+        },
+        /** bcrypt hash of the 6-digit code, never the code itself. */
+        verificationCode: {
+            type: String,
+        },
+        verificationCodeExpiry: {
+            type: Date,
+        },
+        /** Wrong guesses for the current code. */
+        verificationAttempts: {
+            type: Number,
+            default: 0,
+        },
+        /** Drives the resend cooldown. */
+        verificationSentAt: {
+            type: Date,
+        },
+        /** bcrypt hash, same reasoning as verificationCode. */
         resetCode: {
             type: String,
+        },
+        /** Wrong guesses for the current reset code. */
+        resetCodeAttempts: {
+            type: Number,
+            default: 0,
+        },
+        resetCodeSentAt: {
+            type: Date,
         },
         resetCodeExpiry: {
             type: Date,
@@ -72,6 +102,16 @@ const userSchema = new mongoose.Schema(
                 delete user.__v;
                 delete user.accountType;
                 delete user.passwordHistory;
+                delete user.verificationCode;
+                delete user.verificationCodeExpiry;
+                delete user.verificationAttempts;
+                delete user.verificationSentAt;
+                delete user.resetCode;
+                delete user.resetCodeExpiry;
+                delete user.resetCodeAttempts;
+                delete user.resetCodeSentAt;
+                delete user.resetToken;
+                delete user.resetTokenExpiry;
             },
         },
     },
