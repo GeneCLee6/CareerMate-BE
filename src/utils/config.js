@@ -25,6 +25,10 @@ const optionalConfigs = {
     // for the link back to the product.
     EMAIL_SUPPORT_ADDRESS: process.env.EMAIL_SUPPORT_ADDRESS,
     APP_URL: process.env.APP_URL || "http://localhost:3000",
+    // Comma-separated list of browser origins allowed to call this API.
+    // Required in production; the dev server is allowed automatically
+    // everywhere else.
+    CORS_ORIGINS: process.env.CORS_ORIGINS,
 };
 
 for (const key in requiredConfigs) {
