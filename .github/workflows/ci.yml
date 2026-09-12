@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    env:
+      # Config validation refuses to load without these. They are throwaway
+      # values — tests mock every external service and never reach a real
+      # database, S3 bucket, or the Anthropic API.
+      MONGODB_URI: mongodb://127.0.0.1:27017/careermate-ci
+      JWT_SECRET: ci-secret-not-used-anywhere-real
+      S3_BUCKET: ci-bucket
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Check the app still loads
+        # Catches syntax errors and broken require paths that unit tests,
+        # which import modules individually, would miss.
+        run: node -e "require('./src/app.js'); console.log('app loads OK')"
