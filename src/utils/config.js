@@ -21,6 +21,10 @@ const optionalConfigs = {
     BREVO_API_KEY: process.env.BREVO_API_KEY,
     EMAIL_FROM_ADDRESS: process.env.EMAIL_FROM_ADDRESS,
     EMAIL_FROM_NAME: process.env.EMAIL_FROM_NAME || "CareerMate AI",
+    // Shown in the email footer so a recipient can reply to a human, and used
+    // for the link back to the product.
+    EMAIL_SUPPORT_ADDRESS: process.env.EMAIL_SUPPORT_ADDRESS,
+    APP_URL: process.env.APP_URL || "http://localhost:3000",
 };
 
 for (const key in requiredConfigs) {

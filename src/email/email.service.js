@@ -1,8 +1,16 @@
 const config = require("../utils/config");
 const logger = require("../utils/logger");
 const AppException = require("../exceptions/app.exception");
+const { CODE_EXPIRY_MS } = require("../utils/verificationCode");
+const {
+    verificationEmail,
+    passwordResetEmail,
+} = require("./email.template");
 
 const BREVO_ENDPOINT = "https://api.brevo.com/v3/smtp/email";
+
+/** Quoted in the body, so it is read from the same place the code honours. */
+const EXPIRY_MINUTES = Math.round(CODE_EXPIRY_MS / 60000);
 
 /** True when the server can actually send mail. */
 function isConfigured() {
@@ -72,58 +80,22 @@ async function send({ to, toName, subject, html, text }) {
     return { delivered: true, loggedOnly: false };
 }
 
-/** Shared shell so every message looks like it came from the same product. */
-function layout(heading, bodyHtml) {
-    return `<!doctype html>
-<html>
-  <body style="margin:0;padding:24px;background:#f9fafc;font-family:Helvetica,Arial,sans-serif;color:#161616;">
-    <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:16px;padding:32px;">
-      <h1 style="margin:0 0 16px;font-size:20px;">${heading}</h1>
-      ${bodyHtml}
-      <p style="margin:32px 0 0;font-size:12px;color:#898989;">
-        If you didn't request this, you can ignore this email.
-      </p>
-    </div>
-  </body>
-</html>`;
-}
-
-function codeBlock(code) {
-    return `<p style="margin:0 0 8px;font-size:15px;">Your code is:</p>
-      <p style="margin:0;font-size:32px;font-weight:700;letter-spacing:6px;">${code}</p>
-      <p style="margin:16px 0 0;font-size:14px;color:#595959;">
-        It expires in 10 minutes.
-      </p>`;
-}
-
 function sendVerificationCode({ to, name, code }) {
-    return send({
-        to,
-        toName: name,
-        subject: "Verify your CareerMate AI account",
-        html: layout(
-            "Welcome to CareerMate AI",
-            `<p style="margin:0 0 24px;font-size:15px;">
-               Enter this code to finish creating your account.
-             </p>${codeBlock(code)}`,
-        ),
-        text: `Welcome to CareerMate AI.\n\nYour verification code is ${code}.\nIt expires in 10 minutes.`,
+    const { subject, html, text } = verificationEmail({
+        name,
+        code,
+        expiryMinutes: EXPIRY_MINUTES,
     });
+    return send({ to, toName: name, subject, html, text });
 }
 
 function sendPasswordResetCode({ to, name, code }) {
-    return send({
-        to,
-        toName: name,
-        subject: "Reset your CareerMate AI password",
-        html: layout(
-            "Reset your password",
-            `<p style="margin:0 0 24px;font-size:15px;">
-               Enter this code to choose a new password.
-             </p>${codeBlock(code)}`,
-        ),
-        text: `Reset your CareerMate AI password.\n\nYour reset code is ${code}.\nIt expires in 10 minutes.`,
+    const { subject, html, text } = passwordResetEmail({
+        name,
+        code,
+        expiryMinutes: EXPIRY_MINUTES,
     });
+    return send({ to, toName: name, subject, html, text });
 }
 
 module.exports = {
