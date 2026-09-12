@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const app = require("./app");
 const config = require("./utils/config");
 const logger = require("./utils/logger");
@@ -14,16 +15,28 @@ const start = async () => {
     const shutdown = (signal) => {
         logger.info(`${signal} received, shutting down now`);
         server.close(() => {
-            mongoose.connection.close().then(() => {
-                logger.info("DB connection closed");
-                process.exit(0);
-            });
+            mongoose.connection
+                .close()
+                .then(() => {
+                    logger.info("DB connection closed");
+                    process.exit(0);
+                })
+                .catch((err) => {
+                    // Still exit: the host is waiting to replace this process.
+                    logger.error("Could not close the DB connection", {
+                        message: err.message,
+                    });
+                    process.exit(1);
+                });
         });
 
-        setTimeout(() => {
+        const timer = setTimeout(() => {
             logger.error("Shutdown failed");
             process.exit(1);
         }, SHUTDOWN_TIMEOUT);
+        // Don't let the deadline itself hold the process open once everything
+        // else has finished.
+        timer.unref();
     };
 
     process.on("SIGTERM", () => shutdown("SIGTERM"));
