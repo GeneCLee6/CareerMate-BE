@@ -102,11 +102,14 @@ const updateAvatar = async (req, res) => {
         });
     }
 
+    // Return the whole user, as every other /users endpoint does. Returning
+    // only { avatar } made the client replace its user object with a single
+    // field, so fullName became undefined and the header crashed rendering
+    // initials. It also withheld avatarUrl, so the new photo could not be
+    // shown until the next page load.
     res.status(200).json({
         success: true,
-        data: {
-            avatar: fileKey,
-        },
+        data: user,
     });
 };
 
