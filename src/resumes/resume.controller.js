@@ -8,6 +8,7 @@ const {
     generatePresignedGetUrl,
     DOWNLOAD_URL_EXPIRES_IN,
 } = require("../utils/s3");
+const { isObjectId } = require("../utils/objectId");
 const Resume = require("./resume.model");
 
 const createResume = async (req, res) => {
@@ -72,12 +73,18 @@ const getResumes = async (req, res) => {
 };
 
 const findOwnResume = async (resumeId, userId) => {
-    const resume = await Resume.findById(resumeId);
-    if (!resume) {
+    // A malformed id is "not found", not a server error. Without this check
+    // findById throws a CastError and the caller sees a 500.
+    if (!isObjectId(resumeId)) {
         throw new NotFoundException("Resume not found");
     }
-    if (resume.user.toString() !== userId) {
-        throw new ForbiddenException("Missing access permission");
+
+    const resume = await Resume.findById(resumeId);
+    // Someone else's resume is reported as missing rather than forbidden:
+    // "forbidden" confirms the id exists, which is not something a caller
+    // should be able to learn.
+    if (!resume || resume.user.toString() !== userId) {
+        throw new NotFoundException("Resume not found");
     }
     return resume;
 };

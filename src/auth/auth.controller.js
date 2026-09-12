@@ -4,6 +4,9 @@ const UnauthorizedException = require("../exceptions/unauthorized.exception");
 const ForbiddenException = require("../exceptions/forbidden.exception");
 const ConflictException = require("../exceptions/conflict.exception");
 const BadRequestException = require("../exceptions/badRequest.exception");
+const TooManyRequestsException = require(
+    "../exceptions/tooManyRequests.exception"
+);
 const { hashPassword, comparePassword } = require("../utils/password");
 const { signAccessToken } = require("../utils/jwt");
 const logger = require("../utils/logger");
@@ -23,6 +26,15 @@ const RESET_ACTION_EXPIRY_TIME = 10 * 60 * 1000;
 
 /** Same wording whether or not the address exists, so it cannot be probed. */
 const NEUTRAL_REPLY = "If the email exists, a verification code will be sent";
+
+/**
+ * One message for every rejected sign-in.
+ *
+ * Two different messages — one for an unknown address, one for a wrong
+ * password — let anyone test whether an address has an account here. That is
+ * a privacy leak on its own, and a head start for credential stuffing.
+ */
+const SIGN_IN_REJECTED = "Invalid email or password";
 
 function issueToken(user) {
     return signAccessToken({ id: user._id, accountType: user.accountType });
@@ -57,6 +69,19 @@ const register = async (req, res) => {
     const existingUser = await User.findOne({ email }).exec();
     if (existingUser && existingUser.emailVerifiedAt) {
         throw new ConflictException("Email already exists!");
+    }
+
+    // Reissuing to a pending address goes through the same cooldown as
+    // /auth/resend-verification. Without this, register was a way around that
+    // limit: repeat it against an address and every call sends another email,
+    // spending the daily quota and filling someone's inbox.
+    if (existingUser) {
+        const waitMs = cooldownRemaining(existingUser.verificationSentAt);
+        if (waitMs > 0) {
+            throw new TooManyRequestsException(
+                `Please wait ${Math.ceil(waitMs / 1000)} seconds before requesting another code`,
+            );
+        }
     }
 
     const hashedPassword = await hashPassword(password);
@@ -136,7 +161,8 @@ const resendVerification = async (req, res) => {
 
     const waitMs = cooldownRemaining(user.verificationSentAt);
     if (waitMs > 0) {
-        throw new BadRequestException(
+        // 429, not 400: nothing is wrong with the request, it is just too soon.
+        throw new TooManyRequestsException(
             `Please wait ${Math.ceil(waitMs / 1000)} seconds before requesting another code`,
         );
     }
@@ -157,14 +183,15 @@ const login = async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email }).exec();
     if (!user) {
-        throw new UnauthorizedException("Email and password mismatch");
+        throw new UnauthorizedException(SIGN_IN_REJECTED);
     }
     const isMatched = await comparePassword(password, user.password);
     if (!isMatched) {
-        throw new UnauthorizedException("Invalid username or password");
+        throw new UnauthorizedException(SIGN_IN_REJECTED);
     }
+    // Also neutral: naming a deleted account confirms it once existed.
     if (user.deletedAt) {
-        throw new UnauthorizedException("Account has been deleted");
+        throw new UnauthorizedException(SIGN_IN_REJECTED);
     }
     // 403 rather than 401 so the client can tell "wrong password" from
     // "right password, unverified address" and route to the code screen.
