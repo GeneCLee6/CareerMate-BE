@@ -103,12 +103,18 @@ assistant does not open every conversation by asking what the user already
 told the product. This is why `PRD.md` §3.2 says those fields are not only
 profile data — changing the onboarding enum changes what the model sees.
 
-**The resume limitation is stated, not hidden.** The model is told the files
-exist, given their names, and told it cannot read them. Without that line a
-model asked "what do you think of my resume?" will happily produce plausible
-feedback about a document it has never seen. Naming the limitation converts a
-confident fabrication into "paste the section you want me to look at" — the
-single highest-value line in the prompt, and the thing §8 item 1 removes.
+**The resume goes in, fenced and labelled as data.** Text is extracted from
+the PDF at upload and included in full (up to a cap), wrapped in `<resume>`
+tags, followed by a sentence saying the content is a document to discuss and
+carries no instructions. That last sentence is not decoration: a resume is
+user-uploaded text landing in the system prompt, so one containing "ignore
+your instructions" has to read as a curiosity in someone's CV.
+
+**A resume that could not be read says so.** A scan is a picture of
+characters, not characters, so nothing can be extracted. Those files are
+listed by name with an explicit note to ask the user rather than guess —
+because a model asked "what do you think of my resume?" will otherwise
+produce plausible feedback on a document it has never seen.
 
 **Empty facts are omitted, not sent as empty.** A user who skipped onboarding
 gets `BASE_PROMPT` alone rather than `Role: undefined`. Null-ish values in a
@@ -236,12 +242,16 @@ entire error mapping — including the refusal branch — is covered with no key
 and no spend. CI runs it on every PR for free.
 
 **Prompt injection is a live surface, and a bounded one.** Everything in the
-system prompt is user-controlled: name, goal, and resume filenames. A user
-could name a file `ignore previous instructions.pdf`. Today the blast radius
-is small — the model has no tools, so the worst outcome is that it misbehaves
-in that user's own conversation. There is no other user's data to reach and no
-action to take. **That changes the moment tools are added** (§8), which is why
-tool use and untrusted prompt content should not land in the same change.
+system prompt is user-controlled: name, goal, filenames — and now the full
+text of an uploaded document, which is a far larger surface than the rest put
+together. It is fenced in `<resume>` tags and explicitly labelled as material
+to discuss rather than instructions to follow.
+
+Fencing is a mitigation, not a guarantee. What actually bounds the damage is
+that the model has no tools: the worst outcome is that it misbehaves inside
+that user's own conversation, with no other user's data to reach and no action
+to take. **That changes the moment tools are added** (§8), which is why tool
+use and untrusted prompt content must not land in the same change.
 
 **No secrets reach the model.** The prompt carries profile fields and
 filenames — never tokens, password hashes, or anything from `.env`. Resume
@@ -252,25 +262,28 @@ files themselves stay in S3; only their names are sent.
 In priority order. Item 1 is the product's biggest gap; items 3 and 4 are what
 would turn this from a single call into a genuine agent.
 
-**1. The assistant cannot read resumes.** It knows filenames. For a product
-whose headline promise is resume feedback, this is the gap that matters most.
-The path: extract text from the PDF on upload, store it alongside the record,
-and include the relevant part in the prompt. Once resumes are long enough that
-they do not fit comfortably, selecting the relevant section becomes a
-retrieval problem rather than a formatting one.
+**1. Long resumes are truncated, not selected from.** Text beyond
+`MAX_PROMPT_CHARS` is cut with a marker. A resume is one to three pages, so
+this rarely bites — but the moment it does, choosing *which* part to send
+becomes a retrieval problem rather than a formatting one.
 
-**2. Replies do not stream.** A long answer arrives all at once after a
+**2. Scanned resumes still cannot be read.** An image-only PDF has no text to
+extract. OCR would fix it, at the cost of another dependency and a slower
+upload; today those files are handled honestly instead, by telling the model
+it cannot see them.
+
+**3. Replies do not stream.** A long answer arrives all at once after a
 visible wait. The API supports streaming; this needs SSE on the backend and
 incremental rendering on the frontend. Note the interaction with hosting
 (`DEPLOY.md` §3): streaming makes the execution-limit problem worse, not
 better, which reinforces the choice of a long-lived container over serverless.
 
-**3. Tool use, when there is something to act on.** Searching real job
+**4. Tool use, when there is something to act on.** Searching real job
 listings, or drafting and saving a document, is the point at which the model
 needs to *do* something and the single call becomes a loop. The SDK's tool
 runner would own that loop.
 
-**4. Evaluation.** There is no measurement of answer quality — only that a
+**5. Evaluation.** There is no measurement of answer quality — only that a
 reply came back. Before tuning `effort` or changing model on anything but
 instinct, there should be a set of representative questions and a way to
 compare outputs across configurations. Right now "raise effort if answers feel
@@ -285,4 +298,6 @@ shallow" is a judgement call, and it should be a measurement.
 | Fixed `budget_tokens` instead of adaptive thinking | Guessing a budget per request when the model can decide per turn. Also deprecated on current models |
 | Conversation summarisation | A second call, another thing to store, and a failure mode the user cannot see — before any real conversation is long enough to need it |
 | Streaming from day one | Worth doing (§8), but it complicates the error path, and getting persistence and rollback right mattered more first |
-| Sending resume text before extraction was solid | Half-parsed PDF text is worse than a stated limitation: the model produces confident feedback on garbled input |
+| Extracting text on every chat turn instead of at upload | A download and a parse per turn, to produce the same text every time. Doing it once at upload also surfaces an unreadable file immediately rather than mid-conversation |
+| OCR for scanned resumes | Another dependency and a slower upload, for a case better handled by saying plainly that the file cannot be read |
+| Storing only a summary of the resume | A second model call, and feedback on a resume has to quote the actual wording — a summary loses exactly what is being critiqued |

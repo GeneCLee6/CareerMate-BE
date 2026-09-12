@@ -6,9 +6,12 @@ const {
     copyObject,
     deleteObject,
     generatePresignedGetUrl,
+    getObjectBuffer,
     DOWNLOAD_URL_EXPIRES_IN,
 } = require("../utils/s3");
 const { isObjectId } = require("../utils/objectId");
+const { extractText } = require("./resumeText");
+const logger = require("../utils/logger");
 const Resume = require("./resume.model");
 
 const createResume = async (req, res) => {
@@ -33,11 +36,31 @@ const createResume = async (req, res) => {
 
     await deleteObject(tmpKey);
 
+    // Read the text now rather than on every chat turn. It costs a second
+    // here and saves a download per conversation later; it also means a file
+    // we cannot read is known about immediately rather than at the moment the
+    // user asks a question about it.
+    let extracted = { status: "failed", text: "", pageCount: 0 };
+    try {
+        extracted = await extractText(await getObjectBuffer(fileKey));
+    } catch (err) {
+        // extractText swallows its own parse failures, so reaching here means
+        // the download did. Either way the upload succeeded and the file is
+        // safe; only the text is missing.
+        logger.warn("Could not read the uploaded resume back from storage", {
+            message: err.message,
+        });
+    }
+
     const resume = await Resume.create({
         user: userId,
         fileKey,
         fileName,
         fileSize: head.ContentLength,
+        contentText: extracted.text,
+        textStatus: extracted.status,
+        pageCount: extracted.pageCount,
+        textExtractedAt: new Date(),
     });
 
     res.status(201).json({

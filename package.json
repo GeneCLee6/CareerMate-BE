@@ -6,8 +6,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "test": "jest --runInBand",
-    "test:watch": "jest --watch",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "email:preview": "node scripts/preview-emails.js",
     "seed:dev-user": "node scripts/seed-dev-user.js"
   },
@@ -36,6 +36,7 @@
     "mongodb": "^7.6.0",
     "mongoose": "^9.9.1",
     "morgan": "^1.11.0",
+    "pdf-parse": "^2.4.5",
     "winston": "^3.19.0",
     "zod": "^4.4.3"
   },
