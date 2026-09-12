@@ -16,6 +16,11 @@ const optionalConfigs = {
     // Optional on purpose: the app boots without it and the chat routes
     // report themselves as unconfigured rather than the server failing.
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+    // Email delivery. Without these the app still runs; outside production the
+    // message is logged instead of sent, so the flow can be exercised.
+    BREVO_API_KEY: process.env.BREVO_API_KEY,
+    EMAIL_FROM_ADDRESS: process.env.EMAIL_FROM_ADDRESS,
+    EMAIL_FROM_NAME: process.env.EMAIL_FROM_NAME || "CareerMate AI",
 };
 
 for (const key in requiredConfigs) {
