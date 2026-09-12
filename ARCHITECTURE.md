@@ -94,6 +94,10 @@ is how authorisation checks end up scattered.
 
 ## 5. AI conversation design
 
+> The reasoning behind these choices — context assembly, the history
+> window, failure behaviour, and what would turn this into a genuine
+> agent — is in [`AI.md`](./AI.md). This section is the summary.
+
 **Model**: `claude-opus-5` with `thinking: { type: "adaptive" }`.
 
 | Parameter | Value | Reason |

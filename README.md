@@ -11,7 +11,8 @@ The frontend lives in
 | Document | Contents |
 | --- | --- |
 | [`PRD.md`](./PRD.md) | Product requirements, user stories, acceptance criteria, known gaps |
-| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Layering, data models, AI design, error contract |
+| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Layering, data models, error contract |
+| [`AI.md`](./AI.md) | How the assistant is designed: context assembly, model choice, failure behaviour |
 | [`RULES.md`](./RULES.md) | Engineering conventions, naming, testing, branch/PR/CI rules |
 | [`DEPLOY.md`](./DEPLOY.md) | Hosting comparison, configuration, email authentication |
 

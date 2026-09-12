@@ -16,7 +16,7 @@ an API affects it, so say so in the PR.
 | Situation | Read |
 | --- | --- |
 | Adding a feature | `PRD.md` §3 (existing endpoints), `ARCHITECTURE.md` §2 (layering) |
-| Touching AI chat | `ARCHITECTURE.md` §5 |
+| Touching AI chat | `AI.md`, then `ARCHITECTURE.md` §5 |
 | Touching email | `ARCHITECTURE.md` §6 |
 | Writing tests | `RULES.md` §6, including the config-mock trap |
 | Branching, opening a PR | `RULES.md` §8–10 |
