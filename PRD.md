@@ -94,6 +94,7 @@ client ──③ create the resource with fileKey──► server ──► vali
 | `POST /chat/messages` | Send a message, with up to 3 attachments, creating a conversation |
 | `POST /chat/conversations/:id/messages` | Continue an existing conversation |
 | `DELETE /chat/conversations/:id` | Delete a conversation and its messages |
+| `DELETE /chat/conversations` | Delete every conversation the user has |
 
 Behavioural requirements:
 
@@ -113,6 +114,9 @@ Behavioural requirements:
 - A message may carry up to 3 attachments, 5 MB each. Images are read by the
   model directly; PDFs are turned into text by the same extractor the resume
   upload uses. A message that is only an attachment is valid.
+- A user must be able to delete their own history. The assistant screen opens
+  only the most recent conversation, so a bulk delete is not a convenience —
+  without it, older conversations are unreachable and therefore undeletable.
 - Attachment bytes are **never stored** — only a filename and type, so a
   reloaded transcript can still show what was sent. Replayed turns tell the
   model the file is no longer available rather than leaving it to guess.
