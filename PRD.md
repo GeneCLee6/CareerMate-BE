@@ -268,11 +268,9 @@ useful answer.**
 | # | Task | Why it matters | Size |
 | --- | --- | --- | --- |
 | 1 | Extract text from uploaded PDFs and put it in the system prompt | The assistant knows only the filename, which undercuts the product's main promise | L |
-| 2 | Restrict `cors()` to known origins | Currently open to any origin | S |
-| 3 | Have `authGuard` reject tokens for soft-deleted accounts | A deleted account's token keeps working for up to 7 days | S |
-| 4 | Add route-level integration tests | The suite covers logic units; wiring is covered only by manual runs | M |
-| 5 | Authenticate a sending domain (SPF/DKIM/DMARC) | Until then the provider rewrites the From address and deliverability suffers — see `DEPLOY.md` | M |
-| 6 | Stream chat replies | A long answer arrives all at once after a visible wait | L |
+| 2 | Add route-level integration tests | The suite covers logic units; wiring is covered only by manual runs | M |
+| 3 | Authenticate a sending domain (SPF/DKIM/DMARC) | Until then the provider rewrites the From address and deliverability suffers — see `DEPLOY.md` | M |
+| 4 | Stream chat replies | A long answer arrives all at once after a visible wait | L |
 
 ### Closed gaps, kept for the record
 
@@ -286,6 +284,15 @@ useful answer.**
   never logged.
 - `shutdown` referenced `mongoose` without importing it, so graceful shutdown
   threw and exited 1 with the connection still open.
+- Sign-in returned a different message for an unknown address than for a
+  wrong password, so accounts could be enumerated.
+- `register` reissued a verification code with no cooldown, which made it a
+  way around the one on `resend-verification`.
+- A malformed document id reached Mongoose and became a 500 instead of a 404.
+- Another user's conversation answered 403, which confirms the id exists.
+- `cors()` accepted any origin.
+- `authGuard` checked only the signature, so a deleted account's token kept
+  working until it expired.
 
 ## 8. Definition of Done
 

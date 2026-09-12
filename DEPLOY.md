@@ -153,6 +153,7 @@ full field list is in `.env.example`.
 | `BREVO_API_KEY` / `EMAIL_FROM_ADDRESS` | ❌ in development, ✅ in production | Without them, production email sending returns 503 |
 | `EMAIL_SUPPORT_ADDRESS` | ❌ | Shown in the email footer; the line is omitted when unset |
 | `APP_URL` | ❌ | Used for the link in the email footer |
+| `CORS_ORIGINS` | ✅ in production | Comma-separated frontend origins, e.g. `https://careermate.pages.dev`. With none set in production, every browser request is rejected |
 | `NODE_ENV` | ❌ | **Must be `production` in production**, or rate limiting is skipped |
 
 > The sender address must be verified in Brevo under *Senders, domains, IPs*.
@@ -162,8 +163,8 @@ full field list is in `.env.example`.
 
 - [ ] `NODE_ENV=production`
 - [ ] `JWT_SECRET` replaced with a fresh random value, not the development one
-- [ ] `cors()` restricted to the frontend domain (not yet done — see
-      `PRD.md` §7)
+- [ ] `CORS_ORIGINS` set to the production frontend origin (exact scheme and
+      host; a subdomain is not implied)
 - [ ] S3/R2 CORS includes the production frontend domain
 - [ ] MongoDB Atlas network access allows the hosting platform's addresses
 - [ ] The database name in `MONGODB_URI` matches the existing database exactly,
