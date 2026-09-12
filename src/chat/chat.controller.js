@@ -4,7 +4,7 @@ const Resume = require("../resumes/resume.model");
 const User = require("../users/user.model");
 const claudeService = require("./claude.service");
 const NotFoundException = require("../exceptions/NotFound.exception");
-const ForbiddenException = require("../exceptions/forbidden.exception");
+const { isObjectId } = require("../utils/objectId");
 
 /** How many earlier turns to replay. Older context is dropped, not summarised. */
 const HISTORY_LIMIT = 40;
@@ -16,12 +16,18 @@ function titleFrom(content) {
 }
 
 async function findOwnConversation(conversationId, userId) {
-    const conversation = await Conversation.findById(conversationId);
-    if (!conversation) {
+    // A malformed id is "not found", not a server error. Without this check
+    // findById throws a CastError and the caller sees a 500.
+    if (!isObjectId(conversationId)) {
         throw new NotFoundException("Conversation not found");
     }
-    if (conversation.user.toString() !== userId) {
-        throw new ForbiddenException("Missing access permission");
+
+    const conversation = await Conversation.findById(conversationId);
+    // Someone else's conversation is reported as missing rather than
+    // forbidden: "forbidden" confirms the id exists, and a conversation id is
+    // exactly the kind of thing that should not be probeable.
+    if (!conversation || conversation.user.toString() !== userId) {
+        throw new NotFoundException("Conversation not found");
     }
     return conversation;
 }

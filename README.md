@@ -49,6 +49,26 @@ Three optional keys change what works; the server starts without any of them:
 | `npm test` | Run the test suite |
 | `npm run test:watch` | Watch mode |
 | `npm run email:preview` | Render every transactional email to `tmp/email-preview` without sending |
+| `npm run seed:dev-user` | Create or reset a verified account for local testing |
+
+## Local testing account
+
+Registration goes through an emailed code, which is tedious when all you want
+is a signed-in session. `npm run seed:dev-user` creates an already-verified
+account and prints its credentials once:
+
+```bash
+npm run seed:dev-user
+```
+
+By default the account is `dev@careermate.local` with a freshly generated
+password. Override either with `SEED_USER_EMAIL` / `SEED_USER_PASSWORD` in
+`.env` — setting the password there keeps it stable across runs. Re-running
+the script resets the existing account rather than creating a second one, and
+it refuses to run when `NODE_ENV=production`.
+
+No credential is written into this repository. The repository is public, and
+a password committed to it stays in the history after the line is removed.
 
 ## API surface
 
