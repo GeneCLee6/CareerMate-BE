@@ -6,6 +6,7 @@ const claudeService = require("./claude.service");
 const NotFoundException = require("../exceptions/NotFound.exception");
 const { isObjectId } = require("../utils/objectId");
 const { prepare } = require("./attachments");
+const { ensureAllExtracted } = require("../resumes/resume.service");
 
 /** How many earlier turns to replay. Older context is dropped, not summarised. */
 const HISTORY_LIMIT = 40;
@@ -95,10 +96,15 @@ const sendMessage = async (req, res) => {
         .limit(HISTORY_LIMIT);
     const history = recent.reverse();
 
-    const [user, resumes] = await Promise.all([
+    const [user, storedResumes] = await Promise.all([
         User.findById(userId),
         Resume.find({ user: userId }).sort({ createdAt: -1 }).limit(5),
     ]);
+
+    // Resumes uploaded before extraction existed still sit at "pending".
+    // Read them the first time they are actually needed, rather than
+    // requiring a migration to have been run or the user to re-upload.
+    const resumes = await ensureAllExtracted(storedResumes);
 
     let reply;
     try {

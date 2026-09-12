@@ -51,6 +51,7 @@ Three optional keys change what works; the server starts without any of them:
 | `npm run test:watch` | Watch mode |
 | `npm run email:preview` | Render every transactional email to `tmp/email-preview` without sending |
 | `npm run seed:dev-user` | Create or reset a verified account for local testing |
+| `npm run backfill:resume-text` | Extract text for resumes uploaded before extraction existed |
 
 ## Local testing account
 
