@@ -1,133 +1,178 @@
-# CareerMate AI 後端架構（ARCHITECTURE）
+# CareerMate AI — Backend Architecture
 
-`PRD.md` 說明「要做什麼」，本文件說明「實際長什麼樣子、資料怎麼流」。`RULES.md` 說明「為什麼這樣拆」。
+`PRD.md` says what the service must do. This document says what it actually
+looks like and how data moves through it. `RULES.md` says why it is split the
+way it is.
 
-## 1. 技術選型
+## 1. Technology choices
 
-| 項目 | 選擇 | 理由 |
-|---|---|---|
-| 執行環境 | Node.js + Express 5 | Express 5 原生支援 async handler 拋錯，不需 `express-async-errors` |
-| 語言 | JavaScript（CommonJS） | 沿用既有程式碼，未導入 TypeScript |
-| 資料庫 | MongoDB + Mongoose 9 | 文件型結構適合對話與彈性的個人檔案欄位 |
-| 驗證 | zod 4 | 與前端共用同一套規則概念，錯誤訊息可直接給使用者 |
-| 認證 | jsonwebtoken + bcryptjs | 無狀態 token，水平擴充不需共享 session |
-| 檔案儲存 | AWS S3（presigned URL） | 檔案不經過應用伺服器，省頻寬與記憶體 |
-| AI | `@anthropic-ai/sdk`（Claude） | 見 §5 |
-| 測試 | Jest | 見 `RULES.md` §6 |
+| Area | Choice | Reason |
+| --- | --- | --- |
+| Runtime | Node.js + Express 5 | Express 5 propagates errors from async handlers natively, so `express-async-errors` is not needed |
+| Language | JavaScript (CommonJS) | Continues the existing codebase; TypeScript was not introduced mid-project |
+| Database | MongoDB + Mongoose 9 | A document model suits conversations and the loosely-shaped profile fields |
+| Validation | zod 4 | Same rule concepts as the frontend, and its messages are fit to show a user |
+| Auth | jsonwebtoken + bcryptjs | Stateless tokens; scaling out needs no shared session store |
+| File storage | AWS S3 with presigned URLs | File bytes never pass through the app server, saving bandwidth and memory |
+| AI | `@anthropic-ai/sdk` (Claude) | See §5 |
+| Email | Brevo HTTP API | See §6 |
+| Tests | Jest | See `RULES.md` §6 |
 
-## 2. 分層與資料流
+## 2. Layering and request flow
 
-本專案採**依功能分模組**（feature folder），每個模組內部再依職責分檔：
+The code is organised **by feature**, and each feature folder is split by
+responsibility:
 
 ```
-route  ──►  validation（zod）  ──►  controller  ──►  model / service
-  │              │                      │                │
-  │              │                      │                └─ 只碰資料與外部服務
-  │              │                      └─ 只編排流程與權限，不寫商業規則細節
-  │              └─ 只驗證與正規化輸入，不碰資料庫
-  └─ 只宣告路徑與中介層順序
+route  ──►  validation (zod)  ──►  controller  ──►  model / service
+  │              │                     │                │
+  │              │                     │                └─ touches data and external services only
+  │              │                     └─ orchestrates and authorises; no business rule details
+  │              └─ validates and normalises input; never touches the database
+  └─ declares paths and middleware order only
 ```
 
-一次請求的完整路徑：
+One request, end to end:
 
 ```
 Request
   └─ helmet → morgan → rateLimiter → express.json → cors
        └─ /v1 router
-            └─ authGuard（受保護路由）
+            └─ authGuard (protected routes)
                  └─ validateBody(schema)
                       └─ controller
-                           ├─ Mongoose model（MongoDB）
-                           ├─ s3 utils（AWS）
-                           └─ claude.service（Anthropic）
-  └─ errorHandler（最後，統一輸出）
+                           ├─ Mongoose model (MongoDB)
+                           ├─ s3 utils (AWS)
+                           ├─ claude.service (Anthropic)
+                           └─ email.service (Brevo)
+  └─ errorHandler (last; single response shape)
 ```
 
-## 3. 目錄結構
+## 3. Directory structure
 
 ```
 src/
-├── app.js                  Express 應用組裝（中介層順序在此）
-├── index.js                啟動點：連線資料庫後才 listen
-├── routes.js               /v1 路由表，authGuard 掛載位置
+├── app.js                  Express assembly — middleware order lives here
+├── index.js                Entry point: connect to the database, then listen
+├── routes.js               The /v1 table, and where authGuard is mounted
 │
-├── auth/                   註冊、登入、忘記密碼
-├── users/                  個人檔案、密碼變更、頭像、管理操作
-├── upload/                 presigned URL 發放
-├── resumes/                履歷建立、列表、下載、刪除
-├── chat/                   AI 對話（見 §5）
+├── auth/                   Register, verify, sign in, password recovery
+├── users/                  Profile, password change, avatar, admin actions
+├── upload/                 Presigned URL issuing
+├── resumes/                Resume create, list, download, delete
+├── chat/                   AI conversation (see §5)
+├── email/                  Transport and templates (see §6)
 │
 ├── middleware/
-│   ├── authGuard           驗證 JWT，注入 req.user
-│   ├── roleGuard           檢查 accountType
+│   ├── authGuard           Verifies the JWT, populates req.user
+│   ├── roleGuard           Checks accountType
 │   ├── validation          validateBody(zodSchema)
-│   ├── rateLimit           全域限流
-│   ├── morgan              請求日誌
-│   └── error               統一錯誤輸出（見 §6）
+│   ├── rateLimit           Global limiter
+│   ├── morgan              Request logging
+│   └── error               Single error response shape (see §7)
 │
-├── exceptions/             AppException 與各狀態碼子類
-└── utils/                  config、db、jwt、password、s3、logger
+├── exceptions/             AppException and one subclass per status code
+└── utils/                  config, db, jwt, password, verificationCode, s3, logger
 ```
 
-**新增檔案時先問**：這屬於「路徑宣告、輸入驗證、流程編排、資料存取」哪一層？放錯層會讓權限檢查散落各處。
+**Before adding a file, ask** which layer it belongs to: path declaration,
+input validation, orchestration, or data access. Putting it in the wrong one
+is how authorisation checks end up scattered.
 
-## 4. 資料模型
+## 4. Data models
 
-| Model | 關鍵欄位 | 備註 |
-|---|---|---|
-| `User` | email（唯一）、password、fullName、displayName、role、field、goal、avatar、accountType、passwordHistory、resetCode/resetToken、deletedAt | `toJSON` 移除 password、`__v`、accountType、passwordHistory |
-| `Resume` | user、fileKey、fileName、fileSize | **目前未設 `toJSON: { virtuals: true }`**，因此只有 `_id` 沒有 `id`，前端需自行正規化 |
-| `Conversation` | user、title、lastMessageAt | 有設 virtuals |
-| `Message` | conversation、user、role、content、usage | 有設 virtuals；`conversation + createdAt` 複合索引 |
+| Model | Key fields | Notes |
+| --- | --- | --- |
+| `User` | email (unique), password, fullName, displayName, role, field, goal, avatar, accountType, passwordHistory, emailVerifiedAt, verificationCode, resetCode/resetToken, deletedAt | `toJSON` strips password, `__v`, accountType, passwordHistory and every code field |
+| `Resume` | user, fileKey, fileName, fileSize | **Does not set `toJSON: { virtuals: true }`**, so documents arrive with `_id` and no `id`; the frontend normalises them |
+| `Conversation` | user, title, lastMessageAt | Virtuals enabled |
+| `Message` | conversation, user, role, content, usage | Virtuals enabled; compound index on `conversation + createdAt` |
 
-> `Resume` 缺少 virtuals 曾導致前端刪除功能送出 `/resumes/undefined` 並收到 500。新增 model 時請一律設定 `toJSON: { virtuals: true }`。
+> The missing virtuals on `Resume` once caused the frontend to send
+> `DELETE /resumes/undefined` and receive a 500. Set
+> `toJSON: { virtuals: true }` on every new model.
 
-## 5. AI 對話設計
+## 5. AI conversation design
 
-**模型**：`claude-opus-5`，`thinking: { type: "adaptive" }`。
+**Model**: `claude-opus-5` with `thinking: { type: "adaptive" }`.
 
-| 參數 | 值 | 理由 |
-|---|---|---|
-| `effort` | `medium` | 職涯對話偏「對話」而非「硬推理」，medium 兼顧速度與成本；回答變淺時再調高 |
-| `max_tokens` | 16000 | 這是**上限不是目標**，未用到的 output token 不計費，只是避免長答案被截斷 |
-| `fallbacks` | `"default"` | 模型拒答時在同一次呼叫改由備援模型接手 |
+| Parameter | Value | Reason |
+| --- | --- | --- |
+| `effort` | `medium` | Career conversation is dialogue more than hard reasoning; medium balances latency and cost. Raise it if answers get shallow |
+| `max_tokens` | 16000 | A **ceiling, not a target** — unused output tokens are not billed; this only stops long answers being truncated |
+| `fallbacks` | `"default"` | A backup model takes over within the same call if the primary refuses |
 
-**必須注意的兩件事**：
+**Two things that are easy to get wrong:**
 
-1. **拒答是 HTTP 200**，`stop_reason === "refusal"`。不先檢查就讀 `content` 會得到空回覆，因此 `claude.service` 明確處理此分支。
-2. **錯誤要用 SDK 的型別類別判斷**，不可比對錯誤字串。對應關係：`AuthenticationError` → 503、`RateLimitError` → 429、`BadRequestError` → 400、其餘 `APIError` → 502。
+1. **A refusal is HTTP 200**, with `stop_reason === "refusal"`. Reading
+   `content` without checking first yields an empty reply, so
+   `claude.service` handles that branch explicitly.
+2. **Match errors on the SDK's typed classes**, never on message text. The
+   mapping: `AuthenticationError` → 503, `RateLimitError` → 429,
+   `BadRequestError` → 400, any other `APIError` → 502.
 
-**降級行為**：`ANTHROPIC_API_KEY` 為選填。未設定時 `getClient()` 拋 503，服務本身照常啟動，`/chat/status` 回報 `configured: false`。
+**Degraded mode**: `ANTHROPIC_API_KEY` is optional. Without it `getClient()`
+throws 503, the service still starts, and `/chat/status` reports
+`configured: false`.
 
-**歷史長度**：每次送出最近 40 則訊息（`HISTORY_LIMIT`），更舊的直接捨棄，目前不做摘要壓縮。
+**History length**: the most recent 40 messages (`HISTORY_LIMIT`) are sent.
+Older ones are dropped; there is no summarisation yet.
 
-## 6. 錯誤處理契約
+## 6. Email
 
-所有錯誤最終都經過 `middleware/error.middleware.js`：
+`email/email.service.js` is transport; `email/email.template.js` is content.
+They are separate so the templates can be rendered and reviewed without
+sending anything (`npm run email:preview`).
 
-| 狀態碼 | 回傳給客戶端 | 是否記錄 |
-|---|---|---|
-| 4xx | `err.message` 原文 | 否 |
-| 5xx | 固定字串 `Something unexpected happened` | 是（method、path、message、stack） |
+Brevo's HTTP API is called directly rather than through their SDK: it is one
+endpoint with a stable shape, and one fewer dependency to keep current.
 
-理由：4xx 訊息是寫給使用者看的（`Email already exists!`）；5xx 訊息是內部細節（Mongoose 的 cast error 會洩漏 model 與欄位名稱）。
+**Degraded mode**: with no `BREVO_API_KEY`/`EMAIL_FROM_ADDRESS`, outside
+production the message is written to the log — including the code — so the
+whole verification flow can be exercised before any provider exists. In
+production that path throws 503 instead, and the code is never logged.
 
-統一回應格式：
+Templates are written for mail clients, not browsers: nested tables, inline
+styles only, no images, and a solid `bgcolor` behind every gradient. The
+reasons are documented at the top of the template file.
+
+## 7. Error contract
+
+Every error passes through `middleware/error.middleware.js`:
+
+| Status | Sent to the client | Logged |
+| --- | --- | --- |
+| 4xx | `err.message` as written | No |
+| 5xx | The fixed string `Something unexpected happened` | Yes — method, path, message, stack |
+
+The reason: a 4xx message is written for a user (`Email already exists!`),
+while a 5xx message is an internal detail — a Mongoose cast error names models
+and fields.
+
+The response shape:
 
 ```json
-成功：{ "success": true, "data": ... }        或 { "success": true, "message": "..." }
-失敗：{ "success": false, "error": { "message": "..." } }
+success: { "success": true, "data": ... }   or   { "success": true, "message": "..." }
+failure: { "success": false, "error": { "message": "..." } }
 ```
 
-`DELETE` 成功回 **204 無內容**——前端的 HTTP client 必須能處理空 body。
+A successful `DELETE` returns **204 with no content**, so the frontend's HTTP
+client must handle an empty body.
 
-## 7. 設定與機密
+## 8. Configuration and secrets
 
-`utils/config.js` 在載入時一次讀取 `process.env` 並驗證必填項，缺少即拋錯終止啟動。
+`utils/config.js` reads `process.env` once at load and validates the required
+keys, throwing at startup if one is missing.
 
-| 分類 | 變數 |
-|---|---|
-| 必填 | `MONGODB_URI`、`JWT_SECRET`、`S3_BUCKET` |
-| 選填 | `PORT`、`NODE_ENV`、`LOG_LEVEL`、`JWT_EXPIRES_IN`、`AWS_REGION`、`AWS_ACCESS_KEY_ID`、`AWS_SECRET_ACCESS_KEY`、`CLOUDFRONT_DOMAIN`、`ANTHROPIC_API_KEY` |
+| Category | Variables |
+| --- | --- |
+| Required | `MONGODB_URI`, `JWT_SECRET`, `S3_BUCKET` |
+| Optional | `PORT`, `NODE_ENV`, `LOG_LEVEL`, `JWT_EXPIRES_IN`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `CLOUDFRONT_DOMAIN`, `ANTHROPIC_API_KEY`, `BREVO_API_KEY`, `EMAIL_FROM_ADDRESS`, `EMAIL_FROM_NAME`, `EMAIL_SUPPORT_ADDRESS`, `APP_URL` |
 
-**注意**：因為 config 在模組載入時就凍結了值，測試若要改變設定，必須 `jest.mock("../utils/config")`，在 `beforeEach` 改 `process.env` 是無效的。
+**Note for tests**: because config freezes its values when the module loads,
+a test that needs different settings must `jest.mock("../utils/config")`.
+Changing `process.env` in `beforeEach` has no effect.
+
+The database name inside `MONGODB_URI` is case-sensitive. MongoDB refuses to
+create a database differing from an existing one only by case, and reports it
+as a 500 on the first write rather than at connection time.

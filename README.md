@@ -1,59 +1,78 @@
 # CareerMate-BE
 
-CareerMate AI 的後端 API：帳號、個人檔案、履歷檔案與 AI 對話。
+The backend API for CareerMate AI: accounts, profiles, resume files and AI
+conversations.
 
-前端在 [CareerMate-FE](https://github.com/GeneCLee6/CareerMate-FE)。
+The frontend lives in
+[CareerMate-FE](https://github.com/GeneCLee6/CareerMate-FE).
 
-## 文件
+## Documentation
 
-| 文件 | 內容 |
-|---|---|
-| [`PRD.md`](./PRD.md) | 產品需求、API 清單、已知缺口 |
-| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | 分層、資料模型、AI 設計、錯誤契約 |
-| [`RULES.md`](./RULES.md) | 工程規範、命名、測試、分支／PR／CI 規範 |
-| [`DEPLOY.md`](./DEPLOY.md) | 部署平台比較與設定 |
+| Document | Contents |
+| --- | --- |
+| [`PRD.md`](./PRD.md) | Product requirements, user stories, acceptance criteria, known gaps |
+| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Layering, data models, AI design, error contract |
+| [`RULES.md`](./RULES.md) | Engineering conventions, naming, testing, branch/PR/CI rules |
+| [`DEPLOY.md`](./DEPLOY.md) | Hosting comparison, configuration, email authentication |
 
-## 技術
+## Stack
 
-Node.js · Express 5 · MongoDB (Mongoose) · zod · JWT · AWS S3 · Claude (`@anthropic-ai/sdk`) · Jest
+Node.js · Express 5 · MongoDB (Mongoose) · zod · JWT · AWS S3 ·
+Claude (`@anthropic-ai/sdk`) · Brevo · Jest
 
-## 開始開發
+## Getting started
 
 ```bash
 npm install
-cp .env.example .env   # 填入 MONGODB_URI、JWT_SECRET、S3_BUCKET
+cp .env.example .env   # fill in MONGODB_URI, JWT_SECRET, S3_BUCKET
 npm run dev            # http://localhost:3000
 ```
 
-需要本機 MongoDB（或 Atlas 連線字串）。`ANTHROPIC_API_KEY` 為選填——沒有它服務照常啟動，只是 AI 對話會回 503。
+You need a MongoDB instance (local, or an Atlas connection string). The
+database name in `MONGODB_URI` is case-sensitive: MongoDB refuses to create a
+database whose name differs from an existing one only by case, and the failure
+surfaces as an opaque 500 on the first write.
 
-## 指令
+Three optional keys change what works; the server starts without any of them:
 
-| 指令 | 說明 |
-|---|---|
-| `npm run dev` | 開發模式（nodemon 熱重載） |
-| `npm start` | 正式啟動 |
-| `npm test` | 執行測試 |
-| `npm run test:watch` | 監看模式 |
+| Missing key | What happens |
+| --- | --- |
+| `ANTHROPIC_API_KEY` | `/v1/chat/status` reports `configured: false`; sending a message returns 503 |
+| `BREVO_API_KEY` / `EMAIL_FROM_ADDRESS` | Outside production, emails are written to the log instead of sent, so the verification flow stays testable. In production, sending returns 503 |
 
-## API 一覽
+## Scripts
 
-基礎路徑 `/v1`，除 `/auth/*` 外皆需 `Authorization: Bearer <token>`。
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Development mode with nodemon |
+| `npm start` | Production start |
+| `npm test` | Run the test suite |
+| `npm run test:watch` | Watch mode |
+| `npm run email:preview` | Render every transactional email to `tmp/email-preview` without sending |
 
-| 群組 | 端點 |
-|---|---|
-| `auth` | register、login、forgot-password、verify-code、reset-password |
-| `users` | me（GET/PUT）、me/password、me/avatar |
+## API surface
+
+Base path `/v1`. Everything except `/auth/*` requires
+`Authorization: Bearer <token>`.
+
+| Group | Endpoints |
+| --- | --- |
+| `auth` | register, verify-email, resend-verification, login, forgot-password, verify-code, reset-password |
+| `users` | me (GET/PUT), me/password, me/avatar |
 | `upload` | presigned-url |
-| `resumes` | 建立、列表、下載、刪除 |
-| `chat` | status、conversations、messages |
+| `resumes` | create, list, download, delete |
+| `chat` | status, conversations, messages |
 
-詳細說明見 [`PRD.md`](./PRD.md) §3。
+Registration does **not** return a token: the account is created unverified,
+a six-digit code is emailed, and `login` answers 403 until that code is
+entered. See [`PRD.md`](./PRD.md) §3 for the full contract.
 
-## 測試
+## Tests
 
 ```bash
 npm test
 ```
 
-測試不需要金鑰，也不會連線真實資料庫或呼叫 Anthropic——所有外部服務皆為 mock。
+Tests need no keys. They never reach a real database and never call Anthropic
+or Brevo — every external service is mocked, so the suite costs nothing to run
+and is safe in CI.

@@ -1,48 +1,75 @@
 # CLAUDE.md — CareerMate-BE
 
-給 Claude Code 的專案指引。開始動工前請先讀 `RULES.md` 與 `ARCHITECTURE.md`。
+Project guidance for Claude Code. Read `RULES.md` and `ARCHITECTURE.md`
+before starting work.
 
-## 這是什麼
+## What this is
 
-CareerMate AI 的後端 REST API。Node.js + Express 5 + MongoDB，CommonJS，**沒有 TypeScript**。
+The backend REST API for CareerMate AI. Node.js + Express 5 + MongoDB,
+CommonJS, **no TypeScript**.
 
-前端是另一個 repo（`CareerMate-FE`），改動 API 形狀時要考慮對它的影響。
+The frontend is a separate repository (`CareerMate-FE`). Changing the shape of
+an API affects it, so say so in the PR.
 
-## 動工前必讀
+## Read first
 
-| 情境 | 先讀 |
-|---|---|
-| 加功能 | `PRD.md` §3（現有端點）、`ARCHITECTURE.md` §2（分層） |
-| 改 AI 對話 | `ARCHITECTURE.md` §5 |
-| 寫測試 | `RULES.md` §6（含 config mock 的陷阱） |
-| 開分支、開 PR | `RULES.md` §8–10 |
-| 部署 | `DEPLOY.md` |
+| Situation | Read |
+| --- | --- |
+| Adding a feature | `PRD.md` §3 (existing endpoints), `ARCHITECTURE.md` §2 (layering) |
+| Touching AI chat | `ARCHITECTURE.md` §5 |
+| Touching email | `ARCHITECTURE.md` §6 |
+| Writing tests | `RULES.md` §6, including the config-mock trap |
+| Branching, opening a PR | `RULES.md` §8–10 |
+| Deploying | `DEPLOY.md` |
 
-## 硬性規則
+## Hard rules
 
-1. **不要把金鑰寫進程式碼、commit 或 `.env.example` 的值**。使用者的金鑰由使用者自己填進 `.env`，不要要求他們貼給你。
-2. **不要直接 push `main`**，一律開分支走 PR。
-3. **5xx 不得回傳 `err.message` 給客戶端**（`error.middleware.js` 已處理，不要繞過）。
-4. **存取使用者資源前必須檢查擁有權**，參考各模組的 `findOwnXxx`。
-5. **外部服務在測試中一律 mock**，測試不得花錢或連線正式資料庫。
+1. **Never put a key in code, in a commit, or as a value in
+   `.env.example`.** The user fills their own keys into `.env`; do not ask
+   them to paste one to you.
+2. **Never push directly to `main`.** Branch and open a PR.
+3. **A 5xx must not return `err.message`** to the client.
+   `error.middleware.js` handles this — do not bypass it.
+4. **Check ownership before touching a user's resource.** Follow the
+   `findOwnXxx` helpers.
+5. **Mock every external service in tests.** A test must never cost money or
+   reach a production database.
+6. **Everything written here is in English** — code, comments, docs, commits,
+   PRs, UI copy. This is a public portfolio repository.
 
-## 常見陷阱
+## Known traps
 
-- **`utils/config.js` 在載入時凍結 `process.env`**。測試要改設定必須 `jest.mock("../utils/config")`；在 `beforeEach` 設 `process.env` 無效。同檔案要測「有設定」與「無設定」兩種情境時，拆成兩個測試檔。
-- **新增 Mongoose model 一定要設 `toJSON: { virtuals: true }`**。`Resume` 沒設，導致前端只拿到 `_id` 沒有 `id`，刪除功能曾因此送出 `/resumes/undefined` 並收到 500。
-- **Claude 拒答是 HTTP 200**（`stop_reason === "refusal"`），不是錯誤。不先檢查就讀 `content` 會拿到空字串。
-- **`DELETE` 回 204 無 body**，HTTP client 要能處理空回應。
-- **Express 5 原生支援 async handler 拋錯**，不需要 try/catch 包起來再 `next(err)`。
+- **`utils/config.js` freezes `process.env` at load.** To change settings in a
+  test, `jest.mock("../utils/config")`; setting `process.env` in `beforeEach`
+  does nothing. If one file needs both "configured" and "unconfigured"
+  scenarios, split it into two test files.
+- **Set `toJSON: { virtuals: true }` on every new Mongoose model.** `Resume`
+  does not, so the frontend receives `_id` with no `id` — which once produced
+  `DELETE /resumes/undefined` and a 500.
+- **A Claude refusal is HTTP 200** (`stop_reason === "refusal"`), not an
+  error. Reading `content` without checking gives an empty string.
+- **`DELETE` returns 204 with no body**, so the HTTP client must handle an
+  empty response.
+- **Express 5 propagates async handler errors natively.** No try/catch
+  wrapper calling `next(err)` is needed.
+- **The database name in `MONGODB_URI` is case-sensitive.** MongoDB refuses a
+  name that differs from an existing database only by case, and reports it as
+  a 500 on the first write — not at connection time.
 
-## 開發指令
+## Commands
 
 ```bash
-npm run dev     # nodemon，預設 :3000
-npm test        # Jest，不需金鑰
+npm run dev            # nodemon, :3000 by default
+npm test               # Jest; no keys required
+npm run email:preview  # render the emails to tmp/ without sending
 ```
 
-手動驗證 API 時，用 `curl` 打真實端點比寫一次性腳本可靠。注意 **curl 不執行 CORS**，所以瀏覽器端的上傳問題用 curl 重現不出來。
+When verifying an API by hand, `curl` against the real endpoint beats a
+throwaway script. Note that **curl does not enforce CORS**, so a browser
+upload failure cannot be reproduced with it.
 
-## 目前的已知缺口
+## Current gaps
 
-見 `PRD.md` §6。最擋路的是**寄信功能完全不存在**——忘記密碼會產生驗證碼但從未寄出，而規劃中的 Email 驗證碼註冊也依賴它。
+See `PRD.md` §7. The most limiting one is that **the assistant cannot read
+resume contents** — it knows only filenames, which undercuts the product's
+main promise.
