@@ -1,3 +1,4 @@
+const { LIMITS } = require("../utils/limits");
 const {
     registerSchema,
     loginSchema,
@@ -116,5 +117,47 @@ describe("password reset schemas", () => {
                 newPassword: "Passw0rd123",
             }).success,
         ).toBe(false);
+    });
+});
+
+describe("length limits", () => {
+    // An unbounded name reached an email header, where Brevo rejects anything
+    // over 4096 characters — so registration failed with a 502 after the
+    // account had already been created.
+    it("rejects a full name past the limit", () => {
+        const result = registerSchema.safeParse({
+            fullName: "x".repeat(LIMITS.FULL_NAME + 1),
+            email: "ray@example.com",
+            password: "Passw0rd123",
+        });
+        expect(result.success).toBe(false);
+    });
+
+    it("accepts a full name at exactly the limit", () => {
+        const result = registerSchema.safeParse({
+            fullName: "x".repeat(LIMITS.FULL_NAME),
+            email: "ray@example.com",
+            password: "Passw0rd123",
+        });
+        expect(result.success).toBe(true);
+    });
+
+    it("rejects an over-long email address", () => {
+        const local = "a".repeat(LIMITS.EMAIL);
+        const result = registerSchema.safeParse({
+            fullName: "Ray",
+            email: `${local}@example.com`,
+            password: "Passw0rd123",
+        });
+        expect(result.success).toBe(false);
+    });
+
+    it("still trims before measuring", () => {
+        const result = registerSchema.safeParse({
+            fullName: "  " + "x".repeat(LIMITS.FULL_NAME) + "  ",
+            email: "ray@example.com",
+            password: "Passw0rd123",
+        });
+        expect(result.success).toBe(true);
     });
 });
