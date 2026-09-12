@@ -8,7 +8,8 @@
     "dev": "nodemon src/index.js",
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
-    "email:preview": "node scripts/preview-emails.js"
+    "email:preview": "node scripts/preview-emails.js",
+    "seed:dev-user": "node scripts/seed-dev-user.js"
   },
   "repository": {
     "type": "git",
