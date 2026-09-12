@@ -1,4 +1,5 @@
 const { z } = require("zod");
+const { LIMITS } = require("../utils/limits");
 
 // Trim and lowercase before validating: chained transforms run *after* the
 // format check, so a pasted "  Ray@Example.com  " was rejected as malformed.
@@ -6,7 +7,9 @@ const emailSchema = z
     .string()
     .trim()
     .toLowerCase()
-    .pipe(z.email("Invalid email format"));
+    .pipe(z.email("Invalid email format"))
+    // Bounded before it reaches an email header or a database index.
+    .pipe(z.string().max(LIMITS.EMAIL, "Email address is too long"));
 const passwordSchema = z
     .string()
     .min(8, "Password must be at least 8 characters")
@@ -16,7 +19,11 @@ const passwordSchema = z
 const registerSchema = z.object({
     email: emailSchema,
     password: passwordSchema,
-    fullName: z.string().min(1, "Full name is required").trim(),
+    fullName: z
+        .string()
+        .trim()
+        .min(1, "Full name is required")
+        .max(LIMITS.FULL_NAME, `Full name must be ${LIMITS.FULL_NAME} characters or fewer`),
 });
 
 const loginSchema = z.object({

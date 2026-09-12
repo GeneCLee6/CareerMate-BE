@@ -1,4 +1,5 @@
 const { z } = require("zod");
+const { LIMITS } = require("../utils/limits");
 const CATEGORIES = ["avatar", "resume"];
 const ALLOWED_TYPES = {
     avatar: ["image/jpeg", "image/png", "image/webp"],
@@ -22,7 +23,11 @@ const KEY_PATTERN = /^(avatar|resume)\/[a-f0-9]{24}\/[^/]+$/;
 const TMP_KEY_PATTERN = /^tmp\/[a-f0-9]{24}\/[^/]+$/;
 
 const presignedUploadSchema = z.object({
-    fileName: z.string().trim().min(1),
+    fileName: z
+        .string()
+        .trim()
+        .min(1)
+        .max(LIMITS.FILE_NAME, `File name must be ${LIMITS.FILE_NAME} characters or fewer`),
     contentType: z.string().trim().min(1),
     category: z.enum(CATEGORIES),
     fileSize: z.number().int().positive(),
