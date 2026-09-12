@@ -1,6 +1,12 @@
 const { z } = require("zod");
 
-const emailSchema = z.email("Invalid email format").toLowerCase().trim();
+// Trim and lowercase before validating: chained transforms run *after* the
+// format check, so a pasted "  Ray@Example.com  " was rejected as malformed.
+const emailSchema = z
+    .string()
+    .trim()
+    .toLowerCase()
+    .pipe(z.email("Invalid email format"));
 const passwordSchema = z
     .string()
     .min(8, "Password must be at least 8 characters")
