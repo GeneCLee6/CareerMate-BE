@@ -4,6 +4,7 @@ const logger = require("../utils/logger");
 const AppException = require("../exceptions/app.exception");
 const BadRequestException = require("../exceptions/badRequest.exception");
 const { forPrompt } = require("../resumes/resumeText");
+const { describeStored } = require("./attachments");
 
 /**
  * Claude Opus 5. Do not downgrade for cost without asking — effort is the
@@ -124,12 +125,44 @@ function buildSystemPrompt(user, resumes = []) {
 }
 
 
-/** Maps stored messages onto the shape the Messages API expects. */
-function toApiMessages(history) {
-    return history.map((message) => ({
-        role: message.role,
-        content: message.content,
-    }));
+/**
+ * Maps stored messages onto the shape the Messages API expects.
+ *
+ * `attachmentBlocks` belong to the newest message only: they are the files the
+ * caller just sent, and they exist for this request alone. Earlier turns get a
+ * sentence saying what was attached and that it is gone, because their bytes
+ * were never stored.
+ */
+function toApiMessages(history, attachmentBlocks = []) {
+    const lastIndex = history.length - 1;
+
+    return history.map((message, index) => {
+        const isCurrent = index === lastIndex && attachmentBlocks.length > 0;
+
+        if (isCurrent) {
+            return {
+                role: message.role,
+                // Files first: the model reads the question knowing what it
+                // is looking at, rather than the other way round.
+                //
+                // The text block is added only when something was typed. The
+                // API rejects an empty text block, and attaching a file with
+                // no message is a legitimate way to ask "what is this?".
+                content: [
+                    ...attachmentBlocks,
+                    ...(message.content
+                        ? [{ type: "text", text: message.content }]
+                        : []),
+                ],
+            };
+        }
+
+        const note = describeStored(message.attachments);
+        return {
+            role: message.role,
+            content: note ? `${message.content}${note}` : message.content,
+        };
+    });
 }
 
 /** Pulls the reply text out of the content blocks. */
@@ -146,7 +179,7 @@ function extractText(content) {
  *
  * `history` is the full conversation in order, including the new user message.
  */
-async function createReply({ user, resumes, history }) {
+async function createReply({ user, resumes, history, attachmentBlocks = [] }) {
     const anthropic = getClient();
 
     let response;
@@ -160,7 +193,7 @@ async function createReply({ user, resumes, history }) {
             thinking: { type: "adaptive" },
             output_config: { effort: EFFORT },
             system: buildSystemPrompt(user, resumes),
-            messages: toApiMessages(history),
+            messages: toApiMessages(history, attachmentBlocks),
         });
     } catch (error) {
         // Typed classes, most specific first — never match on message text.

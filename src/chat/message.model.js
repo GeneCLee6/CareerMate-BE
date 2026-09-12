@@ -21,8 +21,25 @@ const messageSchema = new mongoose.Schema(
         },
         content: {
             type: String,
-            required: true,
+            // Not required: a message may be an attachment with nothing typed,
+            // which is a reasonable way to open a conversation. The request
+            // schema already refuses a message that is empty of both.
+            default: "",
         },
+        /**
+         * What was attached, not the attachment itself. The bytes are used for
+         * one request and never stored, so this is only enough for a reloaded
+         * transcript to show a chip and for the model to be told that an
+         * earlier file is no longer available.
+         */
+        attachments: [
+            {
+                _id: false,
+                fileName: String,
+                mediaType: String,
+                kind: { type: String, enum: ["image", "document"] },
+            },
+        ],
         /** Present on assistant messages; useful for spend reporting. */
         usage: {
             inputTokens: Number,
