@@ -83,7 +83,7 @@ Base path `/v1`. Everything except `/auth/*` requires
 | `users` | me (GET/PUT), me/password, me/avatar |
 | `upload` | presigned-url |
 | `resumes` | create, list, download, delete |
-| `chat` | status, conversations, messages |
+| `chat` | status, conversations (list / delete all), messages |
 
 Registration does **not** return a token: the account is created unverified,
 a six-digit code is emailed, and `login` answers 403 until that code is

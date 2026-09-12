@@ -6,6 +6,7 @@ const claudeService = require("./claude.service");
 const NotFoundException = require("../exceptions/NotFound.exception");
 const { isObjectId } = require("../utils/objectId");
 const { prepare } = require("./attachments");
+const logger = require("../utils/logger");
 const { ensureAllExtracted } = require("../resumes/resume.service");
 
 /** How many earlier turns to replay. Older context is dropped, not summarised. */
@@ -149,12 +150,48 @@ const deleteConversation = async (req, res) => {
     res.sendStatus(204);
 };
 
+/**
+ * Deletes every conversation the user has.
+ *
+ * This exists because the assistant screen only ever opens the most recent
+ * conversation: everything older is unreachable in the UI, so without a bulk
+ * delete a user cannot remove — or even see — most of what is stored about
+ * them. For a product that discusses resumes, salaries and rejections, that
+ * is not an acceptable place to leave it.
+ *
+ * Messages go first. If the second call fails, the user is left with empty
+ * conversations rather than conversations whose messages are orphaned and
+ * invisible.
+ */
+const deleteAllConversations = async (req, res) => {
+    const userId = req.user.id;
+
+    const { deletedCount: messages } = await Message.deleteMany({
+        user: userId,
+    });
+    const { deletedCount: conversations } = await Conversation.deleteMany({
+        user: userId,
+    });
+
+    logger.info("User deleted their chat history", {
+        userId,
+        conversations,
+        messages,
+    });
+
+    res.json({
+        success: true,
+        data: { conversations, messages },
+    });
+};
+
 const getStatus = async (req, res) => {
     res.json({ success: true, data: { configured: claudeService.isConfigured() } });
 };
 
 module.exports = {
     listConversations,
+    deleteAllConversations,
     getMessages,
     sendMessage,
     deleteConversation,

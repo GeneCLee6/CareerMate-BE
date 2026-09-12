@@ -8,6 +8,9 @@ const chatRouter = express.Router();
 chatRouter.get("/status", chatController.getStatus);
 
 chatRouter.get("/conversations", chatController.listConversations);
+// Declared before "/conversations/:id" so the literal path is not
+// swallowed by the parameterised one.
+chatRouter.delete("/conversations", chatController.deleteAllConversations);
 chatRouter.get("/conversations/:id/messages", chatController.getMessages);
 chatRouter.delete("/conversations/:id", chatController.deleteConversation);
 
