@@ -84,13 +84,13 @@ is how authorisation checks end up scattered.
 | Model | Key fields | Notes |
 | --- | --- | --- |
 | `User` | email (unique), password, fullName, displayName, role, field, goal, avatar, accountType, passwordHistory, emailVerifiedAt, verificationCode, resetCode/resetToken, deletedAt | `toJSON` strips password, `__v`, accountType, passwordHistory and every code field |
-| `Resume` | user, fileKey, fileName, fileSize | **Does not set `toJSON: { virtuals: true }`**, so documents arrive with `_id` and no `id`; the frontend normalises them |
+| `Resume` | user, fileKey, fileName, fileSize, contentText, textStatus, pageCount | `contentText` is stripped from `toJSON` — it exists to go into a prompt, not down the wire |
 | `Conversation` | user, title, lastMessageAt | Virtuals enabled |
 | `Message` | conversation, user, role, content, usage | Virtuals enabled; compound index on `conversation + createdAt` |
 
-> The missing virtuals on `Resume` once caused the frontend to send
-> `DELETE /resumes/undefined` and receive a 500. Set
-> `toJSON: { virtuals: true }` on every new model.
+> `Resume` previously lacked `toJSON: { virtuals: true }`, which had the
+> frontend sending `DELETE /resumes/undefined` and receiving a 500. It is set
+> now; set it on every new model.
 
 ## 5. AI conversation design
 

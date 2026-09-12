@@ -98,12 +98,14 @@ client ──③ create the resource with fileKey──► server ──► vali
 Behavioural requirements:
 
 - Conversations and messages **must persist**; a refresh must not lose them.
-- The system prompt carries the user's `fullName`, `role`, `field`, `goal` and
-  their resume **filenames**, so the model does not re-ask what is already
-  known.
-- The model **cannot read resume contents** today. The system prompt must say
-  so plainly and ask the user to paste the relevant section, rather than let
-  the model pretend it has read the file.
+- The system prompt carries the user's `fullName`, `role`, `field`, `goal`
+  and the **text of their resumes**, so the model does not re-ask what is
+  already known and can quote the document directly.
+- Resume text is extracted at upload. A file whose text cannot be read — a
+  scan, or an image-only PDF — is listed by name with an explicit instruction
+  to ask the user rather than let the model pretend it has read the file.
+- Resume text is untrusted input in a system prompt. It must be fenced and
+  labelled as data, never merged into the instructions.
 - With no `ANTHROPIC_API_KEY`: the service still starts, `/chat/status`
   reports `configured: false`, and sending returns **503**.
 - If the reply fails, the user's message is **rolled back**. A conversation
@@ -267,10 +269,9 @@ useful answer.**
 
 | # | Task | Why it matters | Size |
 | --- | --- | --- | --- |
-| 1 | Extract text from uploaded PDFs and put it in the system prompt | The assistant knows only the filename, which undercuts the product's main promise | L |
-| 2 | Add route-level integration tests | The suite covers logic units; wiring is covered only by manual runs | M |
-| 3 | Authenticate a sending domain (SPF/DKIM/DMARC) | Until then the provider rewrites the From address and deliverability suffers — see `DEPLOY.md` | M |
-| 4 | Stream chat replies | A long answer arrives all at once after a visible wait | L |
+| 1 | Add route-level integration tests | The suite covers logic units; wiring is covered only by manual runs | M |
+| 2 | Authenticate a sending domain (SPF/DKIM/DMARC) | Until then the provider rewrites the From address and deliverability suffers — see `DEPLOY.md` | M |
+| 3 | Stream chat replies | A long answer arrives all at once after a visible wait | L |
 
 ### Closed gaps, kept for the record
 
@@ -284,6 +285,10 @@ useful answer.**
   never logged.
 - `shutdown` referenced `mongoose` without importing it, so graceful shutdown
   threw and exited 1 with the connection still open.
+- The assistant could not read resume contents, only filenames — the gap that
+  most undercut the product's promise. Closed by extraction at upload.
+- `POST /users/me/avatar` returned only `{ avatar }`, so the client replaced
+  its whole user object with one field and crashed rendering the header.
 - Sign-in returned a different message for an unknown address than for a
   wrong password, so accounts could be enumerated.
 - `register` reissued a verification code with no cooldown, which made it a

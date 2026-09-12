@@ -98,6 +98,24 @@ const validateS3File = async (fileKey, { allowedTypes, maxFileSize }) => {
     return head;
 };
 
+/**
+ * Downloads an object into memory.
+ *
+ * Used for resume text extraction, which needs the bytes rather than a URL.
+ * Safe to hold in memory because uploads are capped at 10 MB before the object
+ * ever reaches the bucket.
+ */
+const getObjectBuffer = async (fileKey) => {
+    const response = await s3Client.send(
+        new GetObjectCommand({ Bucket: config.S3_BUCKET, Key: fileKey }),
+    );
+    const chunks = [];
+    for await (const chunk of response.Body) {
+        chunks.push(chunk);
+    }
+    return Buffer.concat(chunks);
+};
+
 module.exports = {
     UPLOAD_URL_EXPIRES_IN,
     DOWNLOAD_URL_EXPIRES_IN,
@@ -107,4 +125,5 @@ module.exports = {
     deleteObject,
     copyObject,
     validateS3File,
+    getObjectBuffer,
 };
