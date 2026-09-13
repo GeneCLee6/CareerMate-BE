@@ -60,8 +60,12 @@ The frontend must never hold one.
 | `PUT /users/me/password` | Change password while signed in (requires the current one) |
 | `POST /users/me/avatar` | Set the avatar from an uploaded `fileKey` |
 
-- `role` is `Student` or `Other`; `field` is `FE` or `BE`; `goal` is free
-  text.
+- `role` and `field` come from `users/profileOptions.js`, which is the single
+  list behind the Mongoose enum, the zod schema and the AI prompt labels.
+  `goal` is free text.
+- Values already stored on accounts (`Student`, `Other`, `FE`, `BE`) are never
+  removed or renamed. Dropping one would make existing profiles fail
+  validation on their next save.
 - These three fields are also fed into the AI system prompt (§3.4), so they
   are **not only profile data — they are model input**.
 

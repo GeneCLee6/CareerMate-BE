@@ -5,6 +5,10 @@ const AppException = require("../exceptions/app.exception");
 const BadRequestException = require("../exceptions/badRequest.exception");
 const { forPrompt } = require("../resumes/resumeText");
 const { describeStored } = require("./attachments");
+const {
+    ROLE_LABELS,
+    FIELD_LABELS,
+} = require("../users/profileOptions");
 
 /**
  * Claude Opus 5. Do not downgrade for cost without asking — effort is the
@@ -57,8 +61,6 @@ const BASE_PROMPT = [
     "briefly and steer back.",
 ].join(" ");
 
-const FIELD_LABELS = { FE: "Frontend Development", BE: "Backend Development" };
-
 /**
  * Grounds the assistant in what we know about the user, so it does not have to
  * ask for basics the profile already answers.
@@ -67,7 +69,9 @@ function buildSystemPrompt(user, resumes = []) {
     const facts = [];
 
     if (user?.fullName) facts.push(`Name: ${user.fullName}`);
-    if (user?.role) facts.push(`Role: ${user.role}`);
+    if (user?.role) {
+        facts.push(`Role: ${ROLE_LABELS[user.role] ?? user.role}`);
+    }
     if (user?.field) {
         facts.push(`Field: ${FIELD_LABELS[user.field] ?? user.field}`);
     }
