@@ -10,7 +10,8 @@
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "email:preview": "node scripts/preview-emails.js",
     "seed:dev-user": "node scripts/seed-dev-user.js",
-    "backfill:resume-text": "node scripts/backfill-resume-text.js"
+    "backfill:resume-text": "node scripts/backfill-resume-text.js",
+    "migrate:profile-codes": "node scripts/migrate-profile-codes.js"
   },
   "repository": {
     "type": "git",

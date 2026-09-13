@@ -3,36 +3,49 @@ const {
     FIELDS,
     ROLE_LABELS,
     FIELD_LABELS,
+    LEGACY_CODES,
+    normaliseCode,
 } = require("./profileOptions");
 const { updateMeSchema } = require("./user.validation");
 
 /**
- * Values already stored on real accounts. Removing or renaming one would make
- * those profiles fail validation the next time they are saved — a data
- * migration disguised as a tidy-up.
+ * Codes that were stored before the rename. They must keep translating, not
+ * validating: the database has been migrated, but a browser holding a cached
+ * bundle keeps sending the old value until that tab is closed.
  */
-const ALREADY_IN_USE = { roles: ["Student", "Other"], fields: ["FE", "BE"] };
+const RENAMED = { FE: "Frontend", BE: "Backend" };
 
-describe("the options that already exist", () => {
-    it("keeps every role that accounts may already hold", () => {
-        for (const role of ALREADY_IN_USE.roles) {
-            expect(ROLES).toContain(role);
+describe("codes that were renamed", () => {
+    it("translates each one to its current name", () => {
+        for (const [from, to] of Object.entries(RENAMED)) {
+            expect(normaliseCode(from)).toBe(to);
         }
     });
 
-    it("keeps every field that accounts may already hold", () => {
-        for (const field of ALREADY_IN_USE.fields) {
-            expect(FIELDS).toContain(field);
+    it("every legacy code points at a value that exists", () => {
+        for (const to of Object.values(LEGACY_CODES)) {
+            expect([...ROLES, ...FIELDS]).toContain(to);
         }
     });
 
-    it("still accepts a profile saved before the list grew", () => {
-        const result = updateMeSchema.safeParse({
-            fullName: "Ray",
-            role: "Student",
-            field: "FE",
-        });
+    it("leaves a current code alone", () => {
+        expect(normaliseCode("Frontend")).toBe("Frontend");
+        expect(normaliseCode("Student")).toBe("Student");
+    });
+
+    it("leaves something unknown alone, so validation still refuses it", () => {
+        expect(normaliseCode("Blockchain")).toBe("Blockchain");
+    });
+
+    it("tolerates a non-string", () => {
+        expect(normaliseCode(undefined)).toBeUndefined();
+        expect(normaliseCode(null)).toBeNull();
+    });
+
+    it("accepts a legacy code through the schema, stored as the new one", () => {
+        const result = updateMeSchema.safeParse({ fullName: "Ray", field: "FE" });
         expect(result.success).toBe(true);
+        expect(result.data.field).toBe("Frontend");
     });
 });
 
@@ -63,9 +76,16 @@ describe("the lists themselves", () => {
     });
 
     it("spells the labels out rather than passing codes through", () => {
-        expect(FIELD_LABELS.FE).toBe("Frontend Development");
+        expect(FIELD_LABELS.Frontend).toBe("Frontend Development");
         expect(FIELD_LABELS.QA).toBe("QA and Testing");
         expect(ROLE_LABELS.CareerChanger).toBe("Changing career into tech");
+    });
+
+    it("uses words as codes, not abbreviations", () => {
+        // A stored value ends up in database dumps, logs and support
+        // conversations; it should not need a key to read.
+        expect(FIELDS).toContain("Frontend");
+        expect(FIELDS).not.toContain("FE");
     });
 });
 

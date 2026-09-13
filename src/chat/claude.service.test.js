@@ -58,7 +58,7 @@ describe("buildSystemPrompt", () => {
             {
                 fullName: "Ray Zhang",
                 role: "Student",
-                field: "FE",
+                field: "Frontend",
                 goal: "Looking for internship",
             },
             [],
