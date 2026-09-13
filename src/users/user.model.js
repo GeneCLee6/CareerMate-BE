@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const config = require("../utils/config");
+const { ROLES, FIELDS } = require("./profileOptions");
 
 const userSchema = new mongoose.Schema(
     {
@@ -25,11 +26,11 @@ const userSchema = new mongoose.Schema(
         },
         role: {
             type: String,
-            enum: ["Student", "Other"],
+            enum: ROLES,
         },
         field: {
             type: String,
-            enum: ["FE", "BE"],
+            enum: FIELDS,
         },
         goal: {
             type: String,
