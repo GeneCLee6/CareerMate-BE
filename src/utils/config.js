@@ -29,6 +29,8 @@ const optionalConfigs = {
     // Required in production; the dev server is allowed automatically
     // everywhere else.
     CORS_ORIGINS: process.env.CORS_ORIGINS,
+    // Raw value; see utils/trustProxy.js for how it is read and defaulted.
+    TRUST_PROXY: process.env.TRUST_PROXY,
 };
 
 for (const key in requiredConfigs) {

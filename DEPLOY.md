@@ -155,6 +155,7 @@ full field list is in `.env.example`.
 | `APP_URL` | ❌ | Used for the link in the email footer |
 | `CORS_ORIGINS` | ✅ in production | Comma-separated frontend origins, e.g. `https://careermate.pages.dev`. With none set in production, every browser request is rejected |
 | `NODE_ENV` | ❌ | **Must be `production` in production**, or rate limiting is skipped |
+| `TRUST_PROXY` | ❌ | Proxy hops trusted for the client IP. Defaults to `1` in production, which suits Render; without it every user would share one rate-limit bucket |
 
 > The sender address must be verified in Brevo under *Senders, domains, IPs*.
 > An unverified sender is rejected with `Sender not valid`.
