@@ -6,8 +6,12 @@ const rateLimiter = require("./middleware/rateLimit.middleware");
 const v1Router = require("./routes");
 const errorHandler = require("./middleware/error.middleware");
 const { buildCorsOptions } = require("./utils/corsOptions");
+const { resolveTrustProxy } = require("./utils/trustProxy");
+const config = require("./utils/config");
 
 const app = express();
+// Must be set before the rate limiter reads req.ip. See utils/trustProxy.js.
+app.set("trust proxy", resolveTrustProxy(config.TRUST_PROXY, config.NODE_ENV));
 app.use(helmet());
 app.get("/health", (req, res) => {
     res.json({
