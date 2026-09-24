@@ -11,6 +11,12 @@ REST API for accounts, profiles, resume files and AI conversations. The
 interface users actually see lives in a separate repository
 (**CareerMate-FE**); the two communicate over HTTP under `/v1`.
 
+**Version 2** (planned, §3.5–§3.7) turns the assistant into a job-search
+copilot: users save the job ads they are interested in, and the assistant
+answers questions across them with retrieval-augmented generation (RAG),
+citing the ads it drew on. An evaluation harness measures answer quality,
+so model and retrieval choices are made with data rather than by feel.
+
 The backend's goal is not to own every piece of logic. It is to be **the only
 source of truth the frontend can trust, and the only place that holds
 secrets**. Every key — database, AWS, Anthropic, Brevo — exists only here.
@@ -126,6 +132,86 @@ Behavioural requirements:
   model the file is no longer available rather than leaving it to guess.
 
 Model choice and parameters are documented in `ARCHITECTURE.md` §5.
+
+### 3.5 Saved jobs (`/v1/jobs`) — planned
+
+| Endpoint | Purpose |
+| --- | --- |
+| `POST /jobs` | Save a job ad. The pasted ad text is required; title, company and URL are optional |
+| `GET /jobs` | List the user's saved jobs, newest first |
+| `GET /jobs/:id` | Read one saved job, including its extracted fields |
+| `PATCH /jobs/:id` | Update the application status or private notes |
+| `DELETE /jobs/:id` | Delete a job together with its chunks and embeddings |
+
+Behavioural requirements:
+
+- The user **pastes** the ad text. Fetching ads from job boards is out of
+  scope: their terms forbid scraping, and most pages need a signed-in browser
+  to render anyway.
+- Ad text must be 200–20,000 characters. A user may keep at most 200 saved
+  jobs; the limit keeps storage and embedding cost bounded.
+- On save, the model extracts structured fields with structured output:
+  title, company, location, work type, seniority, required skills and
+  nice-to-have skills. Values the user typed win over extracted ones.
+- Extraction failing must not block the save. The job is stored with
+  `extractionStatus: "failed"` and can be retried.
+- Ad text is untrusted input, exactly like resume text: fenced and labelled
+  as data wherever it reaches a prompt.
+- Status is one of `saved`, `applied`, `interviewing`, `offer`, `rejected`,
+  so the list doubles as an application tracker.
+
+### 3.6 Answers grounded in saved jobs (RAG) — planned
+
+**Indexing.** On save, the ad is split into chunks — by section heading where
+the ad has them, otherwise into fixed-size windows with overlap — and each
+chunk is embedded and stored in a `jobchunks` collection with its `user` and
+`job` ids. The embedding model is recorded in `ARCHITECTURE.md`.
+
+**Retrieval.** A MongoDB Atlas Vector Search index over `jobchunks`,
+**pre-filtered on the requesting user's id**. Retrieval must be incapable of
+returning another user's job; the filter is part of the query, never a
+post-processing step.
+
+**Use in chat.** The assistant is given two tools and decides when to call
+them:
+
+| Tool | Answers | How |
+| --- | --- | --- |
+| `search_saved_jobs` | "Which of my saved jobs suit my resume?", "Which ones mention visa sponsorship?" | Vector search, top 8 chunks, returned with their job id and title |
+| `summarise_saved_jobs` | "Which skills come up most across my saved jobs?" | A MongoDB aggregation over the extracted fields |
+
+The split is deliberate. Retrieval returns the few most similar chunks, so it
+cannot count or rank across *all* jobs; questions about the whole set are
+answered from structured data instead.
+
+- A reply that draws on saved jobs must name the jobs it used.
+- When nothing relevant is retrieved, the assistant says so rather than
+  answering from general knowledge as if it had found something.
+- If the embedding service is unavailable, the job is still saved with
+  `indexStatus: "pending"` and indexed later by a backfill script; the tool
+  reports that search is temporarily unavailable.
+- Deleting a job deletes its chunks.
+
+### 3.7 Evaluation harness (`evals/`) — planned
+
+Evals measure answer quality. They call paid APIs, so they are **run by hand
+and never in CI or `npm test`**.
+
+- Each eval is a Node script run with `npm run eval:<name>`. It prints a
+  summary table and writes per-case results — scores, model configuration,
+  token cost — to `evals/results/`, which is gitignored.
+- Datasets are JSON files in the repository, **synthetic or anonymised
+  only**. No real person's resume or data is committed.
+- Where an LLM grades answers, the grader is checked against at least 20
+  cases labelled by hand by the project owner, and the agreement rate is
+  reported next to every result. A grader that has not been checked is not
+  evidence.
+
+| Eval | Question it answers | Metrics |
+| --- | --- | --- |
+| `resume-review` | Which configuration reviews a resume best — effort `medium` or `high`, resume sent as extracted text or as the PDF itself? | Recall of issues planted in each test resume; specificity; claims not supported by the resume; cost per review |
+| `retrieval` | Does search find the right saved jobs? | Recall@k and MRR on questions with known relevant jobs. Cheap: embeddings only, no chat model |
+| `grounded-answers` | Are answers about saved jobs faithful to them? | Share of claims supported by retrieved text; correct citations; correct "nothing found" |
 
 ## 4. User stories and acceptance criteria
 
@@ -250,6 +336,82 @@ useful answer.**
   appears, ordered by most recent activity.
 - Given another user's conversation id, then I get 404.
 
+### Epic F — Saved jobs (planned)
+
+**F1. As a user, I want to save a job ad I am interested in, so I can come
+back to it and ask about it.**
+
+- Given ad text of 200–20,000 characters, when I save it, then it appears at
+  the top of my list with its extracted fields filled in.
+- Given text shorter than 200 or longer than 20,000 characters, then I get
+  400 with a message saying which limit was broken.
+- Given I already have 200 saved jobs, then I get 400 telling me to delete
+  some first.
+- Given extraction fails, then the job is still saved, marked
+  `extractionStatus: "failed"`.
+
+**F2. As a user, I want to track where each application is up to.**
+
+- Given a saved job, when I set its status to `applied`, then the list shows
+  the new status.
+- Given a status outside the allowed set, then I get 400.
+- Given another user's job id, then I get 404.
+
+**F3. As a user, I want to delete a saved job.**
+
+- Given a job that belongs to me, when I delete it, then the job and all of
+  its chunks are removed.
+- Given another user's job id, then I get 404.
+
+### Epic G — Ask across saved jobs (planned)
+
+**G1. As a user, I want to ask which of my saved jobs suit me best, and why.**
+
+- Given saved jobs and a resume, when I ask, then the reply names specific
+  saved jobs and explains the fit from their content and my resume.
+- Given no saved jobs, then the assistant says so and suggests saving some,
+  rather than inventing jobs.
+
+**G2. As a user, I want my saved jobs to stay private.**
+
+- Given another user's saved jobs, then no search of mine ever returns them.
+  Tested on the query itself: the user filter is always present.
+
+**G3. As a user, I want to know which skills my target jobs keep asking for.**
+
+- Given saved jobs, when I ask which skills come up most, then the answer is
+  built from counts over all my saved jobs, not from a handful of retrieved
+  chunks.
+
+**G4. As a user, I want saving to work even when search is down.**
+
+- Given the embedding service is unavailable, when I save a job, then it is
+  saved with `indexStatus: "pending"` and the assistant reports that search
+  is temporarily unavailable.
+
+### Epic H — Evidence of answer quality (planned, developer-facing)
+
+**H1. As the developer, I want to compare assistant configurations on resume
+review, so model choices are made with data.**
+
+- Given the resume-review dataset and two configurations, when I run the
+  eval, then I see a score and a cost per configuration side by side.
+- Given an LLM grader, then its agreement with my hand labels is printed next
+  to the scores.
+
+**H2. As the developer, I want to measure retrieval, so a change to chunking
+or the embedding model can be judged.**
+
+- Given the retrieval dataset, when I run the eval before and after a change,
+  then recall@k and MRR are shown for both.
+
+**H3. As the developer, I want to know whether answers about saved jobs are
+faithful to them.**
+
+- Given the grounded-answers dataset, when I run the eval, then I see the
+  share of supported claims, citation accuracy, and the rate of correct
+  "nothing found" answers.
+
 ## 5. Non-functional requirements
 
 | Area | Requirement |
@@ -260,6 +422,8 @@ useful answer.**
 | Rate limiting | 100 requests / 15 minutes globally; skipped in `dev` and `test` |
 | Observability | Every 5xx leaves method, path, message and stack in the log |
 | Cost | Tests never call a paid API. The suite must be free to run in CI |
+| Retrieval isolation | Every vector search is pre-filtered on the requesting user's id, inside the query |
+| Eval data | Eval datasets are synthetic or anonymised; no real person's data is committed |
 
 ## 6. Out of scope
 
@@ -268,6 +432,8 @@ useful answer.**
 - No streaming replies (SSE/WebSocket); this is request/response.
 - No paid plans, quotas or billing.
 - No pursuit of 100% test coverage; the strategy is in `RULES.md` §6.
+- No scraping or automatic import from job boards; ads are pasted in.
+- No automatic job applications.
 
 ## 7. Delivery status
 
@@ -278,6 +444,9 @@ useful answer.**
 | C — Profile | ✅ Done |
 | D — Resumes | ✅ Done |
 | E — AI conversation | ✅ Done |
+| F — Saved jobs | Planned |
+| G — Ask across saved jobs | Planned |
+| H — Evidence of answer quality | Planned |
 
 ### Remaining tasks, in priority order
 
@@ -286,6 +455,25 @@ useful answer.**
 | 1 | Add route-level integration tests | The suite covers logic units; wiring is covered only by manual runs | M |
 | 2 | Authenticate a sending domain (SPF/DKIM/DMARC) | Until then the provider rewrites the From address and deliverability suffers — see `DEPLOY.md` | M |
 | 3 | Stream chat replies | A long answer arrives all at once after a visible wait | L |
+
+### Version 2 build order
+
+Each step is one small pull request. Evals come first: they need no new
+feature, and every later step is then measured rather than guessed.
+
+| # | Step | Covers |
+| --- | --- | --- |
+| 1 | Eval harness and the `resume-review` eval on the current assistant | H1 |
+| 2 | Saved jobs: model, CRUD endpoints, status tracking | F1 (without extraction), F2, F3 |
+| 3 | Structured extraction on save | F1 |
+| 4 | Chunking, embeddings, Atlas Vector Search index, backfill script | G4 |
+| 5 | `search_saved_jobs` tool in chat | G1, G2 |
+| 6 | `retrieval` eval | H2 |
+| 7 | `summarise_saved_jobs` tool | G3 |
+| 8 | `grounded-answers` eval | H3 |
+
+The frontend (a saved-jobs page and status board) follows from step 2; its
+requirements go into the frontend PRD when that step starts.
 
 ### Closed gaps, kept for the record
 
