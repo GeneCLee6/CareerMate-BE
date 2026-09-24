@@ -1,6 +1,6 @@
 ---
 title: E8 — Answers grounded in saved jobs (RAG)
-status: draft          # ready once the open questions are answered
+status: draft          # ready once the embedding model is chosen (e8-t02)
 epic: E8
 owner: GeneCLee6
 depends_on: [e7-t03]   # needs saved jobs and their delete hook
@@ -166,7 +166,7 @@ atlas/
 - [ ] <!--e8-t01--> Chunker: `chunk.js` with heading-based and window-based strategies and the job header, exhaustive unit tests including edge cases (no headings, one enormous section, very short ads) · AC-E8.1 · repo: BE · learn: what chunking is and why chunk size is a trade-off; contextual headers
 - [ ] <!--e8-t02--> Embedding client: `embeddings.js` for Voyage AI, model and dimensions in one constant, missing key handled as "unavailable", tests with the HTTP call mocked; model choice recorded in `ARCHITECTURE.md` · AC-E8.3 · repo: BE · learn: what an embedding is; similarity; why the same model must embed documents and queries
 - [ ] <!--e8-t03--> Index on save: `jobChunk.model.js`, `indexJob.js`, `indexStatus` transitions, chunks deleted with their job, tests with embeddings mocked · AC-E8.2, AC-E8.3, AC-E8.5 · repo: BE · learn: an indexing pipeline; keeping a derived collection consistent with its source
-- [ ] <!--e8-t04--> Vector index: the committed index definition, `scripts/create-vector-index.js`, and setup notes in `DEPLOY.md` for both the development and production databases · AC-E8.2 · repo: BE · learn: approximate nearest-neighbour search; cosine similarity; filter fields in a vector index
+- [ ] <!--e8-t04--> Vector index: the committed index definition, `scripts/create-vector-index.js`, and setup notes in `DEPLOY.md` for the `CareerMate-dev` cluster and production · AC-E8.2 · repo: BE · learn: approximate nearest-neighbour search; cosine similarity; filter fields in a vector index
 - [ ] <!--e8-t05--> Retrieval: `vectorQuery.js` (pure pipeline builder) and `searchSavedJobs.js`, grouping by job; tests that assert the user filter is inside the `$vectorSearch` stage on every path · AC-E8.4 · repo: BE · learn: why a pre-filter and a post-filter are not the same; testing a security property directly
 - [ ] <!--e8-t06--> Backfill: `scripts/index-pending-jobs.js` with `--dry-run`, also re-indexing when the embedding model changes · AC-E8.3 · repo: BE · learn: idempotent batch jobs; re-indexing after a model change
 - [ ] <!--e8-t07--> Tool use in chat: the `search_saved_jobs` tool definition, the bounded tool loop in `createReply`, results fenced as data, `sources` recorded on the message; tests with the model and search mocked · AC-E8.6, AC-E8.9 · repo: BE · learn: tool use; letting the model decide when to retrieve; bounding an agent loop
@@ -216,18 +216,20 @@ database query. First met in `e8-t09`.
 
 | Risk | Mitigation |
 | --- | --- |
-| Local MongoDB has no `$vectorSearch` | See Open questions; unit tests never need it |
+| Local MongoDB has no `$vectorSearch` | RAG work runs against a separate free Atlas cluster (see Open questions); unit tests never need either |
 | Retrieval returns near-duplicates from one long ad | Results are grouped by job before reaching the model |
 | The model cites a job it did not retrieve | `sources` come from the tool results, not the reply text; `e6-t10` measures citation accuracy |
 | Embedding costs grow with users | One embedding per chunk on save; 200-job limit per user |
 
 ## Open questions
 
-- [ ] **Q:** Where does RAG development run? `$vectorSearch` needs Atlas (or
-      a local MongoDB with the separate search process). Proposed: a
-      `careermate_dev` database on the existing free Atlas cluster, used
-      only while working on this epic; local MongoDB stays the default.
-      **A:** _(unanswered)_
+- [x] **Q:** Where does RAG development run? `$vectorSearch` needs Atlas (or
+      a local MongoDB with the separate search process).
+      **A:** A separate Atlas project, `CareerMate-dev`, with its own free
+      M0 cluster and its own database user — not a second database on the
+      production cluster, where one wrong connection string would reach
+      real users' data. Local `.env` points at it only while working on
+      this epic; local MongoDB stays the default otherwise.
 - [ ] **Q:** Which Voyage AI model? Decided in `e8-t02` by checking current
       models and prices; proposed default: their general-purpose "lite"
       model, upgraded only if the `retrieval` eval says so.
