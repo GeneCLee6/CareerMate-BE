@@ -54,24 +54,31 @@ async function main() {
         displayName: "Dev",
         password: await hashPassword(password),
         role: "Student",
-        field: "FE",
+        field: "Frontend",
         goal: "Land a junior frontend role",
         // Verified outright: the point of the script is to skip the email.
         emailVerifiedAt: new Date(),
-        // Leave nothing half-finished behind from an earlier run.
-        verificationCode: undefined,
-        verificationCodeExpiry: undefined,
         verificationAttempts: 0,
-        resetCode: undefined,
-        resetCodeExpiry: undefined,
         resetCodeAttempts: 0,
         passwordHistory: [],
-        deletedAt: null,
+    };
+
+    // Fields removed on a reset, so nothing half-finished survives from an
+    // earlier run — a pending code, or a soft delete. They are removed with
+    // $unset because Mongoose drops `undefined` from a $set, which silently
+    // left old codes in place; and a field cannot be in $set and $unset at
+    // once, which is what made resetting an existing account fail.
+    const cleared = {
+        verificationCode: "",
+        verificationCodeExpiry: "",
+        resetCode: "",
+        resetCodeExpiry: "",
+        deletedAt: "",
     };
 
     const existing = await User.findOne({ email });
     if (existing) {
-        await User.updateOne({ email }, { $set: fields, $unset: { deletedAt: "" } });
+        await User.updateOne({ email }, { $set: fields, $unset: cleared });
         console.log(`reset existing account: ${email}`);
     } else {
         await User.create({ email, ...fields });
