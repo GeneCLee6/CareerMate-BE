@@ -8,7 +8,7 @@ depends_on: []   # e6-t01 to e6-t08 need nothing; e6-t09 needs e8-t05, e6-t10 ne
 
 ## Background
 
-Implements `PRD.md` §3.7 and Epic E6.
+Part of version 2 (`PRD.md` §1). Epic E6.
 
 Every choice about the assistant so far — the model, the effort level, how
 the resume reaches the prompt — was made by reading a few replies and

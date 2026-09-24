@@ -1,25 +1,35 @@
 # Epic PRDs
 
-`PRD.md` at the repository root describes the product as a whole and
-version 1, which is complete. This folder holds one PRD per **version 2
-epic**: the full requirements, the acceptance criteria, and the task list
-that the work is actually tracked against.
+One PRD per epic: its requirements, its acceptance criteria, and the task
+list the work is tracked against. `PRD.md` at the repository root holds
+what applies to every epic and links here.
 
-| Epic | File | What it adds |
-| --- | --- | --- |
-| E6 | [`e6-evals.md`](e6-evals.md) | An evaluation harness and three evals that measure answer quality |
-| E7 | [`e7-saved-jobs.md`](e7-saved-jobs.md) | Saving job ads, extracting their fields, tracking applications |
-| E8 | [`e8-rag.md`](e8-rag.md) | Answers grounded in saved jobs: chunking, embeddings, vector search, tool use |
+| Epic | File | What it covers | Status |
+| --- | --- | --- | --- |
+| E0 | [`e0-foundation.md`](e0-foundation.md) | Server skeleton, error contract, hardening, CI, deployment, legal pages | Live |
+| E1 | [`e1-registration.md`](e1-registration.md) | Sign-up and email verification | Done |
+| E2 | [`e2-sign-in.md`](e2-sign-in.md) | Sign-in, sessions, password recovery | Done |
+| E3 | [`e3-profile.md`](e3-profile.md) | Profile, onboarding, settings | Done |
+| E4 | [`e4-resumes.md`](e4-resumes.md) | Resume upload, text extraction, download | Done |
+| E5 | [`e5-ai-conversation.md`](e5-ai-conversation.md) | The assistant: chat, attachments, dictation, history | Done |
+| E6 | [`e6-evals.md`](e6-evals.md) | An evaluation harness and three evals that measure answer quality | Next |
+| E7 | [`e7-saved-jobs.md`](e7-saved-jobs.md) | Saving job ads, extracting their fields, tracking applications | Planned |
+| E8 | [`e8-rag.md`](e8-rag.md) | Answers grounded in saved jobs: chunking, embeddings, vector search, tool use | Planned |
 
-Epics are numbered in the order the work starts, continuing from version 1's
-E1–E5 in `PRD.md`.
+E0–E5 are version 1 and were written up after the fact: every ticked task
+names the pull request or commit that delivered it, so the history can be
+checked. E6–E8 are version 2 and are planned ahead.
+
+Epics are numbered in the order the work starts. E0 is the foundation
+underneath all of them.
 
 New epics start from [`_template.md`](_template.md).
 
 ## Order of work
 
-Epics are not built one after another. Tasks are taken in this order, so
-each one builds on something already merged:
+Version 1's open tasks (`e0-t14`, `e1-t07`, `e5-t08`) are taken when
+needed. Version 2 is not built one epic after another; tasks are taken in
+this order, so each one builds on something already merged:
 
 1. **E6 `e6-t01`–`e6-t08`**: the eval harness and the `resume-review` eval.
    These need no new feature, and every later step is then measured, not
@@ -39,12 +49,13 @@ starting, not halfway through.
 that completes it, never in a later one. An acceptance criterion is ticked
 when every task that covers it is merged and the criterion has been
 verified. These files are the only place progress is recorded; `PRD.md`
-§7 only links here.
+§3 only links here.
 
 **Task line format.**
 
 ```
 - [ ] <!--e7-t03--> What the task delivers · AC-E7.4, AC-E7.5 · repo: BE · learn: …
+- [x] <!--e4-t03--> What the task delivered · AC-E4.5 · repo: BE · done in: BE#14 · learn: …
 ```
 
 | Field | Meaning |
@@ -52,6 +63,7 @@ verified. These files are the only place progress is recorded; `PRD.md`
 | `<!--e7-t03-->` | The task's permanent id: epic E7, task 03. New tasks are appended; a deleted task's number is never reused |
 | `AC-…` | The acceptance criteria this task covers — `AC-E7.4` is epic E7's fourth — or `—` for pure groundwork |
 | `repo` | `BE` for this repository, `FE` for CareerMate-FE |
+| `done in` | Once ticked: the pull request (`BE#14`, `FE#23`) or, for work before pull requests were used, the commit |
 | `learn` | The concepts this task teaches. The project doubles as a course; this field is the syllabus |
 
 **Pull request titles** carry the task id, so history can be traced back to

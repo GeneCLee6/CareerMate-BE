@@ -56,6 +56,10 @@ depends_on: []         # tasks from other epics that must be merged first, e.g. 
 
 ## Risks
 
+## Closed gaps
+
+<!-- Bugs or holes found and fixed, each with the pull request that closed it. -->
+
 ## Open questions
 
 - [ ] **Q:** …

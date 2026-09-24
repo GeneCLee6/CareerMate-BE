@@ -8,7 +8,7 @@ depends_on: [e7-t03]   # needs saved jobs and their delete hook
 
 ## Background
 
-Implements `PRD.md` §3.6 and Epic E8.
+Part of version 2 (`PRD.md` §1). Epic E8.
 
 Once a user has saved thirty or a hundred job ads, the useful questions are
 about the whole set: *which of these suit me*, *which mention visa

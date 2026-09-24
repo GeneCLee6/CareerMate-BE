@@ -8,7 +8,7 @@ depends_on: [e6-t08]   # built after the first eval, so extraction (e7-t04) can 
 
 ## Background
 
-Implements `PRD.md` §3.5 and Epic E7.
+Part of version 2 (`PRD.md` §1). Epic E7.
 
 Today the assistant knows the user's resume but nothing about the jobs they
 are applying for, so every conversation about a specific role starts with
