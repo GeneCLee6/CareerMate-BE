@@ -11,10 +11,11 @@ what applies to every epic and links here.
 | E2 | [`e2-sign-in.md`](e2-sign-in.md) | Sign-in, sessions, password recovery | Done |
 | E3 | [`e3-profile.md`](e3-profile.md) | Profile, onboarding, settings | Done |
 | E4 | [`e4-resumes.md`](e4-resumes.md) | Resume upload, text extraction, download | Done |
-| E5 | [`e5-ai-conversation.md`](e5-ai-conversation.md) | The assistant: chat, attachments, dictation, history | Streaming next |
+| E5 | [`e5-ai-conversation.md`](e5-ai-conversation.md) | The assistant: chat, attachments, dictation, history | Polish and streaming next |
 | E6 | [`e6-evals.md`](e6-evals.md) | An evaluation harness and three evals that measure answer quality | After streaming |
 | E7 | [`e7-saved-jobs.md`](e7-saved-jobs.md) | Saving job ads, extracting their fields, tracking applications | Planned |
 | E8 | [`e8-rag.md`](e8-rag.md) | Answers grounded in saved jobs: chunking, embeddings, vector search, tool use | Planned |
+| E9 | [`e9-conversation-memory.md`](e9-conversation-memory.md) | One continuous conversation with an automatic summary of older messages | Idea |
 
 E0–E5 are version 1 and were written up after the fact: every ticked task
 names the pull request or commit that delivered it, so the history can be
@@ -30,8 +31,10 @@ New epics start from [`_template.md`](_template.md).
 Tasks are taken in this order, so each one builds on something already
 merged:
 
-0. **E5 `e5-t09`, `e5-t08`, `e5-t10`**: a waiting indicator, then streamed
-   replies, so the assistant stops looking frozen while it thinks.
+0. **E5 `e5-t12`, `e5-t11`, `e5-t09`, `e5-t08`, `e5-t10`**: one icon set
+   and a real favicon, the sidebar redesign, a waiting indicator, then
+   streamed replies — so the assistant looks finished and stops looking
+   frozen while it thinks.
 1. **E6 `e6-t01`–`e6-t08`**: the eval harness and the `resume-review` eval.
    These need no new feature, and every later step is then measured, not
    guessed.

@@ -120,6 +120,23 @@ useful answer.**
 - [ ] **AC-E5.14** — Given a streamed reply, when I reload the conversation,
   then the stored reply is exactly what was shown.
 
+**As a user, I want the assistant screen to be easy to find my way around.**
+
+- [ ] **AC-E5.15** — Given the assistant screen, then the sidebar shows, top to
+  bottom: navigation (the assistant, and saved jobs once E7 ships); the
+  conversation list, with a small new-chat button beside its heading, taking
+  the remaining height and scrolling on its own; a compact resume card; and
+  the user row with a link to settings. Sections are visibly separated and
+  nothing overlaps at any window height.
+- [ ] **AC-E5.16** — Given a resume in the sidebar, then its download and delete
+  actions sit behind one menu button that is always visible and aligned with
+  the file name, the card says whether the assistant could read the file,
+  and deleting asks for confirmation.
+- [ ] **AC-E5.17** — Given any icon in the app, then it comes from one icon set,
+  at consistent sizes and stroke widths.
+- [ ] **AC-E5.18** — Given the site in a browser tab, a bookmark or a phone's home
+  screen, then CareerMate's own logo is shown, sharp at every size.
+
 ## Tasks
 
 - [x] <!--e5-t01--> Chat API: conversations, messages, Claude call, rollback on failure, status endpoint, refusal handling, first backend tests · AC-E5.1–AC-E5.4, AC-E5.8 · repo: BE · done in: BE#1 · learn: the Messages API; system prompt vs history; mapping typed SDK errors
@@ -132,6 +149,8 @@ useful answer.**
 - [ ] <!--e5-t08--> Streaming endpoint: server-sent events for sending and continuing a conversation, using the SDK's message stream with thinking shown as `summarized`; events for thinking summary, text, done (with the stored message ids) and error; the reply stored only once complete; rollback on failure; the model call aborted when the client disconnects; checked on Render that nothing buffers the stream · AC-E5.10, AC-E5.12, AC-E5.13, AC-E5.14 · repo: BE · learn: what streaming does and does not change (time to first token, not total time or cost); server-sent events; handling a failure after output has started
 - [ ] <!--e5-t09--> Waiting indicator: three animated dots in the assistant bubble, an elapsed-seconds counter after five seconds, no animation under `prefers-reduced-motion` · AC-E5.11 · repo: FE · learn: perceived latency; CSS keyframes; accessible motion
 - [ ] <!--e5-t10--> Streaming in the chat screen: read the event stream with `fetch` (EventSource cannot send a POST with an auth header), render text as it arrives, show the thinking summary until the answer starts, remove a partial reply on error, abort on leaving the page · AC-E5.10, AC-E5.12, AC-E5.13 · repo: FE · learn: `ReadableStream` and parsing server-sent events by hand; `AbortController`
+- [ ] <!--e5-t11--> Sidebar redesign (layout A): navigation, a scrolling conversation list with a small new-chat button, a compact resume card with an actions menu and a readable-by-the-assistant status, the user row; the mobile drawer keeps the same order · AC-E5.15, AC-E5.16 · repo: FE · learn: flexbox layouts where one region takes the remaining height; visual hierarchy through spacing, weight and dividers; accessible menus
+- [ ] <!--e5-t12--> One icon set and real app icons: `lucide-react` replaces the hand-drawn inline SVGs; the logo is redrawn as SVG and used for the favicon, the Apple touch icon and the manifest icons · AC-E5.17, AC-E5.18 · repo: FE · learn: icon libraries and tree-shaking; why a 24-pixel PNG cannot become a sharp app icon; favicons, `manifest.json` and SVG vs raster
 
 ## Concepts
 
@@ -143,6 +162,15 @@ First met in `e5-t01`.
 **Refusals are not errors.** The API reports a refusal inside a successful
 response. Treating it as an error would show "something went wrong" when
 the model in fact answered. First met in `e5-t01`.
+
+**Why several conversations.** The assistant has no memory of its own; each
+message resends the conversation so far, capped at the last 40 messages.
+One endless conversation would make every message as expensive as the
+longest one, and would silently drop its oldest — often most important —
+context. Separate conversations keep each task (a resume review, one
+company's interview) cheap and focused. A single conversation with an
+automatic summary of older messages is the alternative; it is kept as
+E9. First met in `e5-t11`.
 
 **Streaming.** The model writes its answer token by token either way.
 Streaming sends each piece as it is written instead of waiting for the

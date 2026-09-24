@@ -147,8 +147,7 @@ how a route is made cheaper.
 
 **Trusting the judge.** The owner labels at least 20 reviews by hand — for
 each planted issue, was it found? — before looking at the judge's verdicts.
-The harness reports the agreement rate. Below the threshold (see Open
-questions), the rubric is revised and the judge re-checked; scores from an
+The harness reports the agreement rate. Below 80%, the rubric is revised and the judge re-checked; scores from an
 unchecked judge are not reported as results.
 
 ## Acceptance criteria
@@ -244,9 +243,9 @@ First met in `e6-t10`.
 
 ## Open questions
 
-- [ ] **Q:** What agreement rate must the judge reach before its scores
-      count? Proposed: 80%.
-      **A:** _(unanswered)_
+- [x] **Q:** What agreement rate must the judge reach before its scores
+      count?
+      **A:** 80%.
 - [x] **Q:** Budget per full run?
       **A:** US$5 as the default `EVAL_BUDGET_USD`, reached by judging
       with Sonnet 5, batching every call, and running in two stages. The

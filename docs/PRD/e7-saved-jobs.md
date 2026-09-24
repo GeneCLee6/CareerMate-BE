@@ -135,6 +135,10 @@ again.
 - [ ] **AC-E7.11** — Given a job in the list, when I open it, then I see the ad,
   the extracted fields, status and notes, and can change status, edit notes
   and delete after confirming.
+- [ ] **AC-E7.12** — *(optional)* Given the URL of a public job page, when I
+  choose to import from it, then the ad text is filled in for me to check
+  before saving; given a page that cannot be read — LinkedIn and Seek need
+  a signed-in browser — then I am told to paste the text instead.
 
 ## Tasks
 
@@ -146,6 +150,7 @@ again.
 - [ ] <!--e7-t06--> Frontend API client and Saved jobs page: `src/api/jobs.ts` with types, the paste form, the list with status filter, the empty state, navigation entry · AC-E7.10 · repo: FE · learn: typing an API response once and reusing it; optimistic vs confirmed list updates
 - [ ] <!--e7-t07--> Frontend job detail: the ad, extracted fields, status control, notes editor, delete with confirmation, a retry button when extraction failed · AC-E7.11 · repo: FE · learn: editing server state from a form; confirmation for destructive actions
 - [ ] <!--e7-t08--> Extraction check: a small `extraction` eval on 20 synthetic ads with known fields, reporting per-field accuracy, using the harness from Epic E6 · AC-E7.8 · repo: BE · learn: evaluating extraction, which has exact answers, unlike review quality
+- [ ] <!--e7-t09--> *(optional, after E8)* Import from a link: the model's web fetch tool reads a public job page and fills the paste box for the user to check; pages it cannot read fall back to pasting, with a message saying why · AC-E7.12 · repo: BE, FE · learn: server-side tools; why most job boards cannot be fetched; failing honestly
 
 ## Concepts
 
@@ -176,6 +181,12 @@ First met in `e7-t02`.
 | Users paste ads they have no right to store | Stored privately per user, never shared or published — the same position as a bookmark |
 
 ## Open questions
+
+- [x] **Q:** Paste the ad, or give a link and let the product read it?
+      **A:** Paste the ad. The URL is optional and only stored, so the user
+      can get back to the original posting. LinkedIn and Seek cannot be
+      fetched (sign-in walls, anti-bot measures, terms), so reading links
+      is at most a best-effort extra for public pages (`e7-t09`).
 
 - [ ] **Q:** Should `seniority` and `workType` be editable by the user when
       extraction gets them wrong? Proposed: not in this epic; notes cover it.
