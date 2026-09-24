@@ -141,9 +141,9 @@ task is one pull request.
 
 | Section | Epic | File |
 | --- | --- | --- |
-| 3.5 Saved jobs (`/v1/jobs`) | F | [`docs/PRD/f-saved-jobs.md`](docs/PRD/f-saved-jobs.md) |
-| 3.6 Answers grounded in saved jobs (RAG) | G | [`docs/PRD/g-rag-saved-jobs.md`](docs/PRD/g-rag-saved-jobs.md) |
-| 3.7 Evaluation harness (`evals/`) | H | [`docs/PRD/h-evals.md`](docs/PRD/h-evals.md) |
+| 3.5 Saved jobs (`/v1/jobs`) | E7 | [`docs/PRD/e7-saved-jobs.md`](docs/PRD/e7-saved-jobs.md) |
+| 3.6 Answers grounded in saved jobs (RAG) | E8 | [`docs/PRD/e8-rag.md`](docs/PRD/e8-rag.md) |
+| 3.7 Evaluation harness (`evals/`) | E6 | [`docs/PRD/e6-evals.md`](docs/PRD/e6-evals.md) |
 
 ## 4. User stories and acceptance criteria
 
@@ -151,9 +151,9 @@ Acceptance criteria are written as Given / When / Then so they read as test
 names. Each one is covered either by a test in the suite or by a verified run
 against real infrastructure.
 
-### Epic A — Registration and email verification
+### Epic E1 — Registration and email verification
 
-**A1. As a new user, I want to create an account with my email address, so
+**E1.1. As a new user, I want to create an account with my email address, so
 that I can start using the assistant.**
 
 - Given a valid name, email and password, when I register, then the account
@@ -167,7 +167,7 @@ that I can start using the assistant.**
   then it is trimmed and lowercased before validation, and the account is
   created.
 
-**A2. As a new user, I want to confirm my email with a code, so that my
+**E1.2. As a new user, I want to confirm my email with a code, so that my
 account becomes usable.**
 
 - Given the correct code within 10 minutes, when I submit it, then my account
@@ -180,22 +180,22 @@ account becomes usable.**
 - Given an account that is already verified, when I submit any code, then I
   am told it is already verified rather than given a generic failure.
 
-**A3. As a user who did not receive the email, I want to request another
+**E1.3. As a user who did not receive the email, I want to request another
 code.**
 
 - Given more than 60 seconds since the last send, when I ask for a new code,
   then one is sent and the previous code stops working.
 - Given fewer than 60 seconds, then I get 429 and no email is sent.
 
-**A4. As an unverified user, I want to be told why I cannot sign in.**
+**E1.4. As an unverified user, I want to be told why I cannot sign in.**
 
 - Given a correct password on an unverified account, when I log in, then I
   get **403** with a message about verification — not 401, which would read
   as a wrong password.
 
-### Epic B — Sign-in and password recovery
+### Epic E2 — Sign-in and password recovery
 
-**B1. As a returning user, I want to sign in.**
+**E2.1. As a returning user, I want to sign in.**
 
 - Given correct credentials on a verified account, when I log in, then I
   receive a token valid for 7 days, plus my profile.
@@ -203,7 +203,7 @@ code.**
   the same message in both cases — the response must not reveal which
   addresses are registered.
 
-**B2. As a user who forgot my password, I want to reset it by email.**
+**E2.2. As a user who forgot my password, I want to reset it by email.**
 
 - Given any address, when I request a reset, then I get 200 whether or not an
   account exists; only a registered address receives a code.
@@ -214,9 +214,9 @@ code.**
 - Given a new password matching one in my password history, then I get 400
   and the password is unchanged.
 
-### Epic C — Profile
+### Epic E3 — Profile
 
-**C1. As a user, I want to record my role, field and goal, so the
+**E3.1. As a user, I want to record my role, field and goal, so the
 assistant's advice fits me.**
 
 - Given `role` outside `Student`/`Other`, or `field` outside `FE`/`BE`, then
@@ -224,13 +224,13 @@ assistant's advice fits me.**
 - Given a saved profile, when I open a conversation, then those values appear
   in the system prompt.
 
-**C2. As a user, I want to change my password while signed in.**
+**E3.2. As a user, I want to change my password while signed in.**
 
 - Given the wrong current password, then I get 401 and nothing changes.
 
-### Epic D — Resumes
+### Epic E4 — Resumes
 
-**D1. As a user, I want to upload my resume, so the assistant knows which
+**E4.1. As a user, I want to upload my resume, so the assistant knows which
 document we are discussing.**
 
 - Given a PDF of 10 MB or less, when I upload it, then it is stored and
@@ -240,16 +240,16 @@ document we are discussing.**
 - Given a file uploaded to the temporary prefix that is never confirmed, then
   it does not appear in my list.
 
-**D2. As a user, I want to delete a resume.**
+**E4.2. As a user, I want to delete a resume.**
 
 - Given a resume that belongs to me, when I delete it, then both the database
   record and the S3 object are removed.
 - Given a resume id belonging to another user, then I get 404 — **not** 403,
   which would confirm the id exists.
 
-### Epic E — AI conversation
+### Epic E5 — AI conversation
 
-**E1. As a user, I want to ask the assistant about my job search and get a
+**E5.1. As a user, I want to ask the assistant about my job search and get a
 useful answer.**
 
 - Given a message, when I send it, then my message and the reply are both
@@ -262,13 +262,13 @@ useful answer.**
   rather than as a transport error (the Anthropic API returns HTTP 200 for a
   refusal).
 
-**E2. As a user, I want my conversations to still be there tomorrow.**
+**E5.2. As a user, I want my conversations to still be there tomorrow.**
 
 - Given a conversation created yesterday, when I list conversations, then it
   appears, ordered by most recent activity.
 - Given another user's conversation id, then I get 404.
 
-### Epics F, G and H — version 2
+### Epics E6, E7 and E8 — version 2
 
 Their user stories and acceptance criteria live in the epic files listed in
 §3.5–3.7, and are ticked there.
@@ -300,14 +300,14 @@ Their user stories and acceptance criteria live in the epic files listed in
 
 | Epic | Status |
 | --- | --- |
-| A — Registration and email verification | ✅ Done |
-| B — Sign-in and password recovery | ✅ Done |
-| C — Profile | ✅ Done |
-| D — Resumes | ✅ Done |
-| E — AI conversation | ✅ Done |
-| F — Saved jobs | Planned — [`f-saved-jobs.md`](docs/PRD/f-saved-jobs.md) |
-| G — Ask across saved jobs | Planned — [`g-rag-saved-jobs.md`](docs/PRD/g-rag-saved-jobs.md) |
-| H — Evidence of answer quality | Planned — [`h-evals.md`](docs/PRD/h-evals.md) |
+| E1 — Registration and email verification | ✅ Done |
+| E2 — Sign-in and password recovery | ✅ Done |
+| E3 — Profile | ✅ Done |
+| E4 — Resumes | ✅ Done |
+| E5 — AI conversation | ✅ Done |
+| E6 — Evidence of answer quality | Planned — [`e6-evals.md`](docs/PRD/e6-evals.md) |
+| E7 — Saved jobs | Planned — [`e7-saved-jobs.md`](docs/PRD/e7-saved-jobs.md) |
+| E8 — Ask across saved jobs | Planned — [`e8-rag.md`](docs/PRD/e8-rag.md) |
 
 ### Remaining tasks, in priority order
 

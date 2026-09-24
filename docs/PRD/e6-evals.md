@@ -1,14 +1,14 @@
 ---
-title: H — Evidence of answer quality (evals)
+title: E6 — Evidence of answer quality (evals)
 status: ready
-epic: H
+epic: E6
 owner: GeneCLee6
-depends_on: []   # h-t01 to h-t08 need nothing; h-t09 needs g-t05, h-t10 needs g-t08
+depends_on: []   # e6-t01 to e6-t08 need nothing; e6-t09 needs e8-t05, e6-t10 needs e8-t08
 ---
 
 ## Background
 
-Implements `PRD.md` §3.7 and Epic H.
+Implements `PRD.md` §3.7 and Epic E6.
 
 Every choice about the assistant so far — the model, the effort level, how
 the resume reaches the prompt — was made by reading a few replies and
@@ -19,7 +19,7 @@ explained.
 
 Evals come first in version 2 because they need no new feature. The first
 eval measures the assistant as it exists today; the later two measure the
-RAG features of Epic G as they are built.
+RAG features of Epic E8 as they are built.
 
 ## Goals
 
@@ -30,7 +30,7 @@ RAG features of Epic G as they are built.
   as the PDF itself — and at what cost.
 - An LLM grader that is trusted only as far as it agrees with the owner's
   own hand labels.
-- The same harness later measures retrieval (Epic G) and the faithfulness
+- The same harness later measures retrieval (Epic E8) and the faithfulness
   of answers about saved jobs.
 
 ## Non-goals
@@ -94,7 +94,7 @@ evals/
 │   └── llmJudge.js         rubric prompt + structured output
 ├── resume-review/
 │   ├── eval.js             configs, how one case is run, how it is scored
-│   ├── generate.js         synthetic resume generator (h-t03)
+│   ├── generate.js         synthetic resume generator (e6-t03)
 │   └── rubric.md           the judge's instructions, owned by the owner
 ├── datasets/resume-review/ resumes, planted issues, hand labels
 └── results/                gitignored
@@ -124,83 +124,83 @@ unchecked judge are not reported as results.
 
 ## Acceptance criteria
 
-- [ ] **AC-H1** — Given an eval name, when I run `npm run eval:<name>`, then
+- [ ] **AC-E6.1** — Given an eval name, when I run `npm run eval:<name>`, then
   a results file with configurations, per-case outputs, scores, tokens, cost
   and latency is written, and a summary table is printed.
-- [ ] **AC-H2** — Given an estimated cost above `EVAL_BUDGET_USD`, when I
+- [ ] **AC-E6.2** — Given an estimated cost above `EVAL_BUDGET_USD`, when I
   start a run without `--yes`, then it stops before any API call and prints
   the estimate.
-- [ ] **AC-H3** — Given `npm test` or CI, then no eval runs and no paid API
+- [ ] **AC-E6.3** — Given `npm test` or CI, then no eval runs and no paid API
   is called; given a malformed dataset file, then `npm test` fails naming
   the file and field.
-- [ ] **AC-H4** — Given at least 20 synthetic resumes, each with 2–4 planted
+- [ ] **AC-E6.4** — Given at least 20 synthetic resumes, each with 2–4 planted
   issues from the owner's taxonomy, when `eval:resume-review` runs, then
   issue recall, unsupported claims, specificity, cost and latency are shown
   for all four configurations, each from two runs.
-- [ ] **AC-H5** — Given at least 20 hand-labelled reviews, when the judge
+- [ ] **AC-E6.5** — Given at least 20 hand-labelled reviews, when the judge
   grades them, then the agreement rate is printed next to every score, and
   a run whose judge falls below the threshold is marked as not valid.
-- [ ] **AC-H6** — Given a completed valid run, then the chosen configuration
+- [ ] **AC-E6.6** — Given a completed valid run, then the chosen configuration
   and the numbers behind the choice are recorded in `ARCHITECTURE.md` §5,
   and the assistant uses that configuration.
-- [ ] **AC-H7** — Given the retrieval dataset (at least 30 synthetic job
+- [ ] **AC-E6.7** — Given the retrieval dataset (at least 30 synthetic job
   ads, at least 25 questions with owner-labelled relevant jobs), when
   `eval:retrieval` runs, then recall@5, recall@8 and MRR are printed, with
   no chat-model calls.
-- [ ] **AC-H8** — Given the grounded-answers dataset (at least 20 questions,
+- [ ] **AC-E6.8** — Given the grounded-answers dataset (at least 20 questions,
   at least 5 with no answer in the saved jobs), when `eval:grounded-answers`
   runs, then the share of supported claims, citation accuracy and correct
-  "nothing found" rate are printed, with judge agreement as in AC-H5.
+  "nothing found" rate are printed, with judge agreement as in AC-E6.5.
 
 ## Tasks
 
-- [ ] <!--h-t01--> Harness skeleton: `evals/` layout, `run.js` CLI, concurrency-limited runner, results file, summary table, `pricing.js`, budget guard, `evals/results/` gitignored, evals excluded from jest. Proven with a trivial "echo" eval that needs no API · AC-H1, AC-H2, AC-H3 · repo: BE · learn: what an eval is — dataset, case, output, grader, metric; why evals are run by hand
-- [ ] <!--h-t02--> Issue taxonomy and dataset schema: the owner writes the list of resume problems worth catching (with a definition and an example each); zod schema for a resume case; schema test in `npm test` · AC-H3 · repo: BE · learn: defining quality before measuring it; why the taxonomy is a product decision, not a technical one
-- [ ] <!--h-t03--> Synthetic resume generator: a script that asks Claude for a resume with given planted issues and renders it to PDF; the owner reviews every generated resume and keeps at least 20 · AC-H4 · repo: BE · learn: synthetic data and its limits; why every generated case is read by a human
-- [ ] <!--h-t04--> Resume input mode: the product's request builder takes `resumeInput: "text" | "pdf"` (default `text`, product behaviour unchanged) and sends the PDF as a document block when asked; the eval calls this builder · AC-H4 · repo: BE · learn: document blocks and what the model sees in each mode; why an eval must call the real code path
-- [ ] <!--h-t05--> The judge: `rubric.md` written by the owner, `llmJudge.js` with structured output, blind to configuration; `eval:resume-review` runs all four configs twice · AC-H4 · repo: BE · learn: LLM-as-judge, rubrics with anchored scores, structured outputs, blinding
-- [ ] <!--h-t06--> Hand labels and agreement: a small labelling script that shows one review at a time and records the owner's verdicts; agreement rate computed and printed with every result · AC-H5 · repo: BE · learn: validating a grader; agreement rate; why an unchecked LLM judge is not evidence
-- [ ] <!--h-t07--> Run, read, decide: a full valid run; the decision and its numbers written into `ARCHITECTURE.md` §5 · AC-H6 · repo: BE · learn: reading an eval table — averages, spread, cost per point of quality; when a difference is real
-- [ ] <!--h-t08--> Apply the decision: the assistant switches to the winning configuration, if it differs from today's · AC-H6 · repo: BE · learn: turning a measurement into a change, and saying so in the pull request
-- [ ] <!--h-t09--> `retrieval` eval: synthetic job ads, questions labelled with relevant jobs by the owner, recall@k and MRR; compares the chunking strategies from `g-t01` · AC-H7 · repo: BE · learn: recall@k, MRR, why retrieval is measured separately from generation
-- [ ] <!--h-t10--> `grounded-answers` eval: claim-level faithfulness, citation accuracy, abstention; judge checked against hand labels as in `h-t06` · AC-H8 · repo: BE · learn: faithfulness vs relevance, abstention as a feature
+- [ ] <!--e6-t01--> Harness skeleton: `evals/` layout, `run.js` CLI, concurrency-limited runner, results file, summary table, `pricing.js`, budget guard, `evals/results/` gitignored, evals excluded from jest. Proven with a trivial "echo" eval that needs no API · AC-E6.1, AC-E6.2, AC-E6.3 · repo: BE · learn: what an eval is — dataset, case, output, grader, metric; why evals are run by hand
+- [ ] <!--e6-t02--> Issue taxonomy and dataset schema: the owner writes the list of resume problems worth catching (with a definition and an example each); zod schema for a resume case; schema test in `npm test` · AC-E6.3 · repo: BE · learn: defining quality before measuring it; why the taxonomy is a product decision, not a technical one
+- [ ] <!--e6-t03--> Synthetic resume generator: a script that asks Claude for a resume with given planted issues and renders it to PDF; the owner reviews every generated resume and keeps at least 20 · AC-E6.4 · repo: BE · learn: synthetic data and its limits; why every generated case is read by a human
+- [ ] <!--e6-t04--> Resume input mode: the product's request builder takes `resumeInput: "text" | "pdf"` (default `text`, product behaviour unchanged) and sends the PDF as a document block when asked; the eval calls this builder · AC-E6.4 · repo: BE · learn: document blocks and what the model sees in each mode; why an eval must call the real code path
+- [ ] <!--e6-t05--> The judge: `rubric.md` written by the owner, `llmJudge.js` with structured output, blind to configuration; `eval:resume-review` runs all four configs twice · AC-E6.4 · repo: BE · learn: LLM-as-judge, rubrics with anchored scores, structured outputs, blinding
+- [ ] <!--e6-t06--> Hand labels and agreement: a small labelling script that shows one review at a time and records the owner's verdicts; agreement rate computed and printed with every result · AC-E6.5 · repo: BE · learn: validating a grader; agreement rate; why an unchecked LLM judge is not evidence
+- [ ] <!--e6-t07--> Run, read, decide: a full valid run; the decision and its numbers written into `ARCHITECTURE.md` §5 · AC-E6.6 · repo: BE · learn: reading an eval table — averages, spread, cost per point of quality; when a difference is real
+- [ ] <!--e6-t08--> Apply the decision: the assistant switches to the winning configuration, if it differs from today's · AC-E6.6 · repo: BE · learn: turning a measurement into a change, and saying so in the pull request
+- [ ] <!--e6-t09--> `retrieval` eval: synthetic job ads, questions labelled with relevant jobs by the owner, recall@k and MRR; compares the chunking strategies from `e8-t01` · AC-E6.7 · repo: BE · learn: recall@k, MRR, why retrieval is measured separately from generation
+- [ ] <!--e6-t10--> `grounded-answers` eval: claim-level faithfulness, citation accuracy, abstention; judge checked against hand labels as in `e6-t06` · AC-E6.8 · repo: BE · learn: faithfulness vs relevance, abstention as a feature
 
 ## Concepts
 
 **Eval.** A fixed set of inputs (the *dataset*), a way to produce outputs
 from each (the *system under test*), a way to score each output (the
 *grader*), and a way to summarise the scores (the *metrics*). Change one
-thing, run it again, compare. First met in `h-t01`.
+thing, run it again, compare. First met in `e6-t01`.
 
 **Planted issues.** Instead of asking "is this review good?", which has no
 fixed answer, each test resume is built with known problems. The question
-becomes "did the review find them?", which does. First met in `h-t02`.
+becomes "did the review find them?", which does. First met in `e6-t02`.
 
 **Synthetic data.** Test cases generated rather than collected. Cheap and
 free of privacy concerns, but only as realistic as the generator — which is
-why a person reads every case before it is kept. First met in `h-t03`.
+why a person reads every case before it is kept. First met in `e6-t03`.
 
 **LLM-as-judge.** A model grades another model's output against a rubric.
 Fast and cheap, but a judge can be confidently wrong, so it is measured
-against human labels before its scores are believed. First met in `h-t05`.
+against human labels before its scores are believed. First met in `e6-t05`.
 
 **Grader agreement.** The share of cases where the judge and the human
 reach the same verdict. It is the judge's own accuracy, and it bounds how
-much any result can be trusted. First met in `h-t06`.
+much any result can be trusted. First met in `e6-t06`.
 
 **Variance.** The same configuration can score differently on two runs.
 Running each case twice shows how big that spread is, so a difference
 smaller than the spread is not mistaken for an improvement. First met in
-`h-t07`.
+`e6-t07`.
 
 **Recall@k and MRR.** Retrieval metrics. Recall@k: of the relevant items,
 how many appear in the top k results. MRR (mean reciprocal rank): how high
 the first relevant result ranks, averaged — 1 if it is always first, 0.5 if
-always second. First met in `h-t09`.
+always second. First met in `e6-t09`.
 
 **Faithfulness.** Whether every claim in an answer is supported by the
 retrieved text. An answer can be relevant and fluent and still unfaithful.
-First met in `h-t10`.
+First met in `e6-t10`.
 
 ## Risks
 
@@ -218,7 +218,7 @@ First met in `h-t10`.
       **A:** _(unanswered)_
 - [ ] **Q:** Budget per full run? Proposed: US$25, set as the default
       `EVAL_BUDGET_USD`. A full run is needed about three times in this
-      epic (h-t06, h-t07, and once more after any rubric change).
+      epic (e6-t06, e6-t07, and once more after any rubric change).
       **A:** _(unanswered)_
 
 ## Test plan

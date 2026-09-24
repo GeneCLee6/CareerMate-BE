@@ -7,9 +7,12 @@ that the work is actually tracked against.
 
 | Epic | File | What it adds |
 | --- | --- | --- |
-| H | [`h-evals.md`](h-evals.md) | An evaluation harness and three evals that measure answer quality |
-| F | [`f-saved-jobs.md`](f-saved-jobs.md) | Saving job ads, extracting their fields, tracking applications |
-| G | [`g-rag-saved-jobs.md`](g-rag-saved-jobs.md) | Answers grounded in saved jobs: chunking, embeddings, vector search, tool use |
+| E6 | [`e6-evals.md`](e6-evals.md) | An evaluation harness and three evals that measure answer quality |
+| E7 | [`e7-saved-jobs.md`](e7-saved-jobs.md) | Saving job ads, extracting their fields, tracking applications |
+| E8 | [`e8-rag.md`](e8-rag.md) | Answers grounded in saved jobs: chunking, embeddings, vector search, tool use |
+
+Epics are numbered in the order the work starts, continuing from version 1's
+E1–E5 in `PRD.md`.
 
 New epics start from [`_template.md`](_template.md).
 
@@ -18,13 +21,13 @@ New epics start from [`_template.md`](_template.md).
 Epics are not built one after another. Tasks are taken in this order, so
 each one builds on something already merged:
 
-1. **H `h-t01`–`h-t08`**: the eval harness and the `resume-review` eval.
+1. **E6 `e6-t01`–`e6-t08`**: the eval harness and the `resume-review` eval.
    These need no new feature, and every later step is then measured, not
    guessed.
-2. **F `f-t01`–`f-t08`**: saved jobs, backend then frontend.
-3. **G `g-t01`–`g-t10`**: RAG over saved jobs.
-4. **H `h-t09`–`h-t10`**: the `retrieval` and `grounded-answers` evals,
-   which need G to exist.
+2. **E7 `e7-t01`–`e7-t08`**: saved jobs, backend then frontend.
+3. **E8 `e8-t01`–`e8-t10`**: RAG over saved jobs.
+4. **E6 `e6-t09`–`e6-t10`**: the `retrieval` and `grounded-answers` evals,
+   which need E8 to exist.
 
 ## Rules
 
@@ -41,13 +44,13 @@ verified. These files are the only place progress is recorded; `PRD.md`
 **Task line format.**
 
 ```
-- [ ] <!--f-t03--> What the task delivers · AC-F4, AC-F5 · repo: BE · learn: …
+- [ ] <!--e7-t03--> What the task delivers · AC-E7.4, AC-E7.5 · repo: BE · learn: …
 ```
 
 | Field | Meaning |
 | --- | --- |
-| `<!--f-t03-->` | The task's permanent id. New tasks are appended; a deleted task's number is never reused |
-| `AC-…` | The acceptance criteria this task covers, or `—` for pure groundwork |
+| `<!--e7-t03-->` | The task's permanent id: epic E7, task 03. New tasks are appended; a deleted task's number is never reused |
+| `AC-…` | The acceptance criteria this task covers — `AC-E7.4` is epic E7's fourth — or `—` for pure groundwork |
 | `repo` | `BE` for this repository, `FE` for CareerMate-FE |
 | `learn` | The concepts this task teaches. The project doubles as a course; this field is the syllabus |
 
@@ -55,8 +58,8 @@ verified. These files are the only place progress is recorded; `PRD.md`
 the plan:
 
 ```
-feat(jobs): [f-t03] add status and notes updates
-test(evals): [h-t06] report grader agreement with hand labels
+feat(jobs): [e7-t03] add status and notes updates
+test(evals): [e6-t06] report grader agreement with hand labels
 ```
 
 Frontend pull requests use the same ids; the PRD for both repositories

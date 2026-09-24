@@ -1,14 +1,14 @@
 ---
-title: G — Answers grounded in saved jobs (RAG)
+title: E8 — Answers grounded in saved jobs (RAG)
 status: draft          # ready once the open questions are answered
-epic: G
+epic: E8
 owner: GeneCLee6
-depends_on: [f-t03]   # needs saved jobs and their delete hook
+depends_on: [e7-t03]   # needs saved jobs and their delete hook
 ---
 
 ## Background
 
-Implements `PRD.md` §3.6 and Epic G.
+Implements `PRD.md` §3.6 and Epic E8.
 
 Once a user has saved thirty or a hundred job ads, the useful questions are
 about the whole set: *which of these suit me*, *which mention visa
@@ -118,7 +118,7 @@ atlas/
 ```
 
 - **Embedding provider**: Voyage AI, the provider Anthropic's documentation
-  recommends, called through its HTTP API. The model is chosen in `g-t02`
+  recommends, called through its HTTP API. The model is chosen in `e8-t02`
   and recorded in `ARCHITECTURE.md`; changing it later means re-indexing,
   which the backfill script already does.
 - **Vector index**: an Atlas Vector Search index on `jobchunks.embedding`
@@ -133,84 +133,84 @@ atlas/
 
 ## Acceptance criteria
 
-- [ ] **AC-G1** — Given an ad with section headings, when it is chunked, then
+- [ ] **AC-E8.1** — Given an ad with section headings, when it is chunked, then
   each section is one chunk; given an ad without, then windows of about 800
   characters with 100 overlapping; given any ad, then no chunk exceeds 1,200
   characters and every chunk starts with the job header.
-- [ ] **AC-G2** — Given a job is saved and embeddings are available, then its
+- [ ] **AC-E8.2** — Given a job is saved and embeddings are available, then its
   chunks are stored with embeddings and the model name, and `indexStatus` is
   `ok`.
-- [ ] **AC-G3** — Given the embedding service fails or is not configured,
+- [ ] **AC-E8.3** — Given the embedding service fails or is not configured,
   when I save a job, then it is saved with `indexStatus` `pending` or
   `failed`, and the backfill script later indexes it.
-- [ ] **AC-G4** — Given any search, then the pipeline's `$vectorSearch` stage
+- [ ] **AC-E8.4** — Given any search, then the pipeline's `$vectorSearch` stage
   contains the requesting user's id as a filter. Verified on the built
   pipeline, for every code path that searches.
-- [ ] **AC-G5** — Given a job is deleted, then all its chunks are deleted.
-- [ ] **AC-G6** — Given saved jobs and a question about them, when I ask,
+- [ ] **AC-E8.5** — Given a job is deleted, then all its chunks are deleted.
+- [ ] **AC-E8.6** — Given saved jobs and a question about them, when I ask,
   then the assistant calls `search_saved_jobs`, answers from the results,
   names the jobs it used, and the message records those jobs as `sources`.
-- [ ] **AC-G7** — Given a question the saved jobs cannot answer, then the
+- [ ] **AC-E8.7** — Given a question the saved jobs cannot answer, then the
   assistant says it found nothing relevant; given no saved jobs, then it
   says so and suggests saving some.
-- [ ] **AC-G8** — Given a question about the whole set ("which skills come up
+- [ ] **AC-E8.8** — Given a question about the whole set ("which skills come up
   most"), then the assistant uses `summarise_saved_jobs` and the counts
   cover every saved job.
-- [ ] **AC-G9** — Given a model that keeps requesting tools, then after 3
+- [ ] **AC-E8.9** — Given a model that keeps requesting tools, then after 3
   tool calls the reply is produced without more.
-- [ ] **AC-G10** — Given an assistant reply with sources, then the frontend
+- [ ] **AC-E8.10** — Given an assistant reply with sources, then the frontend
   shows a chip per job that opens its detail view.
 
 ## Tasks
 
-- [ ] <!--g-t01--> Chunker: `chunk.js` with heading-based and window-based strategies and the job header, exhaustive unit tests including edge cases (no headings, one enormous section, very short ads) · AC-G1 · repo: BE · learn: what chunking is and why chunk size is a trade-off; contextual headers
-- [ ] <!--g-t02--> Embedding client: `embeddings.js` for Voyage AI, model and dimensions in one constant, missing key handled as "unavailable", tests with the HTTP call mocked; model choice recorded in `ARCHITECTURE.md` · AC-G3 · repo: BE · learn: what an embedding is; similarity; why the same model must embed documents and queries
-- [ ] <!--g-t03--> Index on save: `jobChunk.model.js`, `indexJob.js`, `indexStatus` transitions, chunks deleted with their job, tests with embeddings mocked · AC-G2, AC-G3, AC-G5 · repo: BE · learn: an indexing pipeline; keeping a derived collection consistent with its source
-- [ ] <!--g-t04--> Vector index: the committed index definition, `scripts/create-vector-index.js`, and setup notes in `DEPLOY.md` for both the development and production databases · AC-G2 · repo: BE · learn: approximate nearest-neighbour search; cosine similarity; filter fields in a vector index
-- [ ] <!--g-t05--> Retrieval: `vectorQuery.js` (pure pipeline builder) and `searchSavedJobs.js`, grouping by job; tests that assert the user filter is inside the `$vectorSearch` stage on every path · AC-G4 · repo: BE · learn: why a pre-filter and a post-filter are not the same; testing a security property directly
-- [ ] <!--g-t06--> Backfill: `scripts/index-pending-jobs.js` with `--dry-run`, also re-indexing when the embedding model changes · AC-G3 · repo: BE · learn: idempotent batch jobs; re-indexing after a model change
-- [ ] <!--g-t07--> Tool use in chat: the `search_saved_jobs` tool definition, the bounded tool loop in `createReply`, results fenced as data, `sources` recorded on the message; tests with the model and search mocked · AC-G6, AC-G9 · repo: BE · learn: tool use; letting the model decide when to retrieve; bounding an agent loop
-- [ ] <!--g-t08--> Grounding rules: system-prompt rules for citing jobs, admitting when nothing was found, and the no-saved-jobs case; checked by hand on real questions before `h-t10` measures them · AC-G6, AC-G7 · repo: BE · learn: grounding and abstention; why "I found nothing" is a correct answer
-- [ ] <!--g-t09--> `summarise_saved_jobs`: the aggregation, the tool definition, tests on a fixed set of jobs · AC-G8 · repo: BE · learn: when not to use RAG; aggregation pipelines
-- [ ] <!--g-t10--> Frontend source chips: read `sources` from the message, render chips linking to job details · AC-G10 · repo: FE · learn: showing provenance so users can check an answer
+- [ ] <!--e8-t01--> Chunker: `chunk.js` with heading-based and window-based strategies and the job header, exhaustive unit tests including edge cases (no headings, one enormous section, very short ads) · AC-E8.1 · repo: BE · learn: what chunking is and why chunk size is a trade-off; contextual headers
+- [ ] <!--e8-t02--> Embedding client: `embeddings.js` for Voyage AI, model and dimensions in one constant, missing key handled as "unavailable", tests with the HTTP call mocked; model choice recorded in `ARCHITECTURE.md` · AC-E8.3 · repo: BE · learn: what an embedding is; similarity; why the same model must embed documents and queries
+- [ ] <!--e8-t03--> Index on save: `jobChunk.model.js`, `indexJob.js`, `indexStatus` transitions, chunks deleted with their job, tests with embeddings mocked · AC-E8.2, AC-E8.3, AC-E8.5 · repo: BE · learn: an indexing pipeline; keeping a derived collection consistent with its source
+- [ ] <!--e8-t04--> Vector index: the committed index definition, `scripts/create-vector-index.js`, and setup notes in `DEPLOY.md` for both the development and production databases · AC-E8.2 · repo: BE · learn: approximate nearest-neighbour search; cosine similarity; filter fields in a vector index
+- [ ] <!--e8-t05--> Retrieval: `vectorQuery.js` (pure pipeline builder) and `searchSavedJobs.js`, grouping by job; tests that assert the user filter is inside the `$vectorSearch` stage on every path · AC-E8.4 · repo: BE · learn: why a pre-filter and a post-filter are not the same; testing a security property directly
+- [ ] <!--e8-t06--> Backfill: `scripts/index-pending-jobs.js` with `--dry-run`, also re-indexing when the embedding model changes · AC-E8.3 · repo: BE · learn: idempotent batch jobs; re-indexing after a model change
+- [ ] <!--e8-t07--> Tool use in chat: the `search_saved_jobs` tool definition, the bounded tool loop in `createReply`, results fenced as data, `sources` recorded on the message; tests with the model and search mocked · AC-E8.6, AC-E8.9 · repo: BE · learn: tool use; letting the model decide when to retrieve; bounding an agent loop
+- [ ] <!--e8-t08--> Grounding rules: system-prompt rules for citing jobs, admitting when nothing was found, and the no-saved-jobs case; checked by hand on real questions before `e6-t10` measures them · AC-E8.6, AC-E8.7 · repo: BE · learn: grounding and abstention; why "I found nothing" is a correct answer
+- [ ] <!--e8-t09--> `summarise_saved_jobs`: the aggregation, the tool definition, tests on a fixed set of jobs · AC-E8.8 · repo: BE · learn: when not to use RAG; aggregation pipelines
+- [ ] <!--e8-t10--> Frontend source chips: read `sources` from the message, render chips linking to job details · AC-E8.10 · repo: FE · learn: showing provenance so users can check an answer
 
 ## Concepts
 
 **RAG (retrieval-augmented generation).** Before answering, look up the
 relevant passages and put them in front of the model. The model answers
-from what it was given rather than from memory. First met in `g-t07`.
+from what it was given rather than from memory. First met in `e8-t07`.
 
 **Chunking.** Splitting documents into passages small enough that one
 passage is about one thing, but large enough to make sense alone. Too small
 and a requirement loses its context; too big and one chunk matches
-everything vaguely. First met in `g-t01`.
+everything vaguely. First met in `e8-t01`.
 
 **Embedding.** A list of numbers representing what a piece of text means.
 Texts about similar things have similar numbers, so "React experience" and
 "5+ years building SPAs in React" land close together even with few words
-in common. First met in `g-t02`.
+in common. First met in `e8-t02`.
 
 **Vector search.** Finding the stored embeddings closest to a query's
 embedding. Exact search compares against everything; a vector index finds
-approximately the closest, much faster. First met in `g-t04`.
+approximately the closest, much faster. First met in `e8-t04`.
 
 **Pre-filter vs post-filter.** Filtering inside the search picks the top k
 from the user's own chunks. Filtering after picks the top k from everyone's
 and throws most away — slower, worse results, and the wrong data was touched.
-First met in `g-t05`.
+First met in `e8-t05`.
 
 **Tool use.** The model is told what tools exist; instead of answering, it
 can ask for one to be run. The server runs it, returns the result, and the
 model continues. Letting the model decide when to search is sometimes called
-agentic RAG. First met in `g-t07`.
+agentic RAG. First met in `e8-t07`.
 
 **Grounding and abstention.** A grounded answer can point to where each
 claim came from. Abstention is saying "the saved jobs don't say" when they
-don't — a correct answer, not a failure. First met in `g-t08`.
+don't — a correct answer, not a failure. First met in `e8-t08`.
 
 **When not to use RAG.** Retrieval returns the few most similar passages.
 It cannot count, rank or total across all documents. Those questions need a
-database query. First met in `g-t09`.
+database query. First met in `e8-t09`.
 
 ## Risks
 
@@ -218,7 +218,7 @@ database query. First met in `g-t09`.
 | --- | --- |
 | Local MongoDB has no `$vectorSearch` | See Open questions; unit tests never need it |
 | Retrieval returns near-duplicates from one long ad | Results are grouped by job before reaching the model |
-| The model cites a job it did not retrieve | `sources` come from the tool results, not the reply text; `h-t10` measures citation accuracy |
+| The model cites a job it did not retrieve | `sources` come from the tool results, not the reply text; `e6-t10` measures citation accuracy |
 | Embedding costs grow with users | One embedding per chunk on save; 200-job limit per user |
 
 ## Open questions
@@ -228,7 +228,7 @@ database query. First met in `g-t09`.
       `careermate_dev` database on the existing free Atlas cluster, used
       only while working on this epic; local MongoDB stays the default.
       **A:** _(unanswered)_
-- [ ] **Q:** Which Voyage AI model? Decided in `g-t02` by checking current
+- [ ] **Q:** Which Voyage AI model? Decided in `e8-t02` by checking current
       models and prices; proposed default: their general-purpose "lite"
       model, upgraded only if the `retrieval` eval says so.
       **A:** _(unanswered)_
@@ -237,8 +237,8 @@ database query. First met in `g-t09`.
 
 - Chunker, pipeline builder, grouping, tool loop bound and aggregation are
   pure or mockable, and are unit-tested in `npm test`.
-- The isolation property (AC-G4) has its own test per search path.
-- Retrieval quality is measured by `h-t09`; answer faithfulness by `h-t10`.
+- The isolation property (AC-E8.4) has its own test per search path.
+- Retrieval quality is measured by `e6-t09`; answer faithfulness by `e6-t10`.
 
 ## Interview notes
 

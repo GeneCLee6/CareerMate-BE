@@ -1,12 +1,12 @@
 ---
-title: X — Epic title
+title: En — Epic title
 status: draft          # draft → ready → in-progress → done
-epic: X
+epic: En
 owner: GeneCLee6
-depends_on: []         # tasks from other epics that must be merged first, e.g. [f-t03]
+depends_on: []         # tasks from other epics that must be merged first, e.g. [e7-t03]
 ---
 
-<!-- Copy this file to `x-short-name.md`, fill it in, and delete these comments. -->
+<!-- Copy this file to `en-short-name.md`, where n is the next epic number, fill it in, and delete these comments. -->
 
 ## Background
 
@@ -37,17 +37,17 @@ depends_on: []         # tasks from other epics that must be merged first, e.g. 
 
 ## Acceptance criteria
 
-<!-- Numbered AC-X1, AC-X2, … Written as Given / When / Then so each reads as
+<!-- Numbered AC-En.1, AC-En.2, … Written as Given / When / Then so each reads as
      a test name. Ticked only when every covering task is merged and the
      criterion has been verified. -->
 
-- [ ] **AC-X1** — Given …, when …, then …
+- [ ] **AC-En.1** — Given …, when …, then …
 
 ## Tasks
 
 <!-- One task = one pull request. Format and rules: README.md. -->
 
-- [ ] <!--x-t01--> … · AC-X1 · repo: BE · learn: …
+- [ ] <!--en-t01--> … · AC-En.1 · repo: BE · learn: …
 
 ## Concepts
 
