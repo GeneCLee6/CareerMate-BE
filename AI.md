@@ -100,8 +100,8 @@ Four decisions in there:
 **Profile fields are model input, not just profile data.** `role`, `field` and
 `goal` are collected during onboarding and interpolated here, so the
 assistant does not open every conversation by asking what the user already
-told the product. This is why `PRD.md` §3.2 says those fields are not only
-profile data — changing the onboarding enum changes what the model sees.
+told the product. This is why the profile epic (`docs/PRD/e3-profile.md`) says those fields
+are not only profile data — changing the onboarding enum changes what the model sees.
 
 **The resume goes in, fenced and labelled as data.** Text is extracted from
 the PDF at upload and included in full (up to a cap), wrapped in `<resume>`

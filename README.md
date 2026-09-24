@@ -10,7 +10,8 @@ The frontend lives in
 
 | Document | Contents |
 | --- | --- |
-| [`PRD.md`](./PRD.md) | Product requirements, user stories, acceptance criteria, known gaps |
+| [`PRD.md`](./PRD.md) | Product overview, epics, non-functional requirements |
+| [`docs/PRD/`](./docs/PRD/README.md) | One PRD per epic: requirements, acceptance criteria, tasks |
 | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Layering, data models, error contract |
 | [`AI.md`](./AI.md) | How the assistant is designed: context assembly, model choice, failure behaviour |
 | [`RULES.md`](./RULES.md) | Engineering conventions, naming, testing, branch/PR/CI rules |
@@ -88,7 +89,7 @@ Base path `/v1`. Everything except `/auth/*` requires
 
 Registration does **not** return a token: the account is created unverified,
 a six-digit code is emailed, and `login` answers 403 until that code is
-entered. See [`PRD.md`](./PRD.md) §3 for the full contract.
+entered. See [`docs/PRD/e1-registration.md`](./docs/PRD/e1-registration.md) for the full contract.
 
 ## Tests
 

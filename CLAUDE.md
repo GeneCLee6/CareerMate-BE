@@ -15,7 +15,7 @@ an API affects it, so say so in the PR.
 
 | Situation | Read |
 | --- | --- |
-| Adding a feature | `PRD.md` §3 (existing endpoints), `ARCHITECTURE.md` §2 (layering) |
+| Adding a feature | The epic's file in `docs/PRD/` (requirements, tasks), `ARCHITECTURE.md` §2 (layering) |
 | Touching AI chat | `AI.md`, then `ARCHITECTURE.md` §5 |
 | Touching email | `ARCHITECTURE.md` §6 |
 | Writing tests | `RULES.md` §6, including the config-mock trap |
@@ -70,6 +70,6 @@ upload failure cannot be reproduced with it.
 
 ## Current gaps
 
-See `PRD.md` §7. The most limiting one is that **the assistant cannot read
-resume contents** — it knows only filenames, which undercuts the product's
-main promise.
+Open tasks are the unticked boxes in `docs/PRD/`. Version 1's are route-level
+integration tests (`e0-t14`), an authenticated sending domain (`e1-t07`)
+and streamed replies (`e5-t08`); version 2 starts at `e6-t01`.
