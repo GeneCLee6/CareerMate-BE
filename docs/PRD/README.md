@@ -83,6 +83,9 @@ test(evals): [e6-t06] report grader agreement with hand labels
 
 Frontend pull requests use the same ids; the PRD for both repositories
 lives here.
+A pull request cannot change two repositories, so a frontend task is
+ticked here in the first backend pull request after its frontend pull
+request merges, with `done in: FE#…`.
 
 **Open questions are asked, not guessed.** Anything undecided goes in the
 epic's *Open questions* with the owner's answer written inline. An
