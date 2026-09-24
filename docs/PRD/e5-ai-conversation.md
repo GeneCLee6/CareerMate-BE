@@ -122,19 +122,22 @@ useful answer.**
 
 **As a user, I want the assistant screen to be easy to find my way around.**
 
-- [ ] **AC-E5.15** — Given the assistant screen, then the sidebar shows, top to
-  bottom: navigation (the assistant, and saved jobs once E7 ships); the
-  conversation list, with a small new-chat button beside its heading, taking
+- [x] **AC-E5.15** — Given the assistant screen, then the sidebar shows, top to
+  bottom: the logo; the conversation list, with a small new-chat button beside its heading, taking
   the remaining height and scrolling on its own; a compact resume card; and
   the user row with a link to settings. Sections are visibly separated and
-  nothing overlaps at any window height.
-- [ ] **AC-E5.16** — Given a resume in the sidebar, then its download and delete
+  nothing overlaps at any window height. (Navigation between the assistant
+  and saved jobs is added with the saved-jobs page, `e7-t06`: with one
+  destination it would be a menu of one.)
+- [x] **AC-E5.16** — Given a resume in the sidebar, then its download and delete
   actions sit behind one menu button that is always visible and aligned with
   the file name, the card says whether the assistant could read the file,
   and deleting asks for confirmation.
-- [ ] **AC-E5.17** — Given any icon in the app, then it comes from one icon set,
-  at consistent sizes and stroke widths.
-- [ ] **AC-E5.18** — Given the site in a browser tab, a bookmark or a phone's home
+- [x] **AC-E5.17** — Given any icon in the app, then it comes from one icon set,
+  at consistent sizes and stroke widths. (The two native `<select>` chevrons
+  are CSS images of the same glyph, since a `<select>` cannot hold a
+  component.)
+- [x] **AC-E5.18** — Given the site in a browser tab, a bookmark or a phone's home
   screen, then CareerMate's own logo is shown, sharp at every size.
 
 ## Tasks
@@ -149,8 +152,8 @@ useful answer.**
 - [ ] <!--e5-t08--> Streaming endpoint: server-sent events for sending and continuing a conversation, using the SDK's message stream with thinking shown as `summarized`; events for thinking summary, text, done (with the stored message ids) and error; the reply stored only once complete; rollback on failure; the model call aborted when the client disconnects; checked on Render that nothing buffers the stream · AC-E5.10, AC-E5.12, AC-E5.13, AC-E5.14 · repo: BE · learn: what streaming does and does not change (time to first token, not total time or cost); server-sent events; handling a failure after output has started
 - [ ] <!--e5-t09--> Waiting indicator: three animated dots in the assistant bubble, an elapsed-seconds counter after five seconds, no animation under `prefers-reduced-motion` · AC-E5.11 · repo: FE · learn: perceived latency; CSS keyframes; accessible motion
 - [ ] <!--e5-t10--> Streaming in the chat screen: read the event stream with `fetch` (EventSource cannot send a POST with an auth header), render text as it arrives, show the thinking summary until the answer starts, remove a partial reply on error, abort on leaving the page · AC-E5.10, AC-E5.12, AC-E5.13 · repo: FE · learn: `ReadableStream` and parsing server-sent events by hand; `AbortController`
-- [ ] <!--e5-t11--> Sidebar redesign (layout A): navigation, a scrolling conversation list with a small new-chat button, a compact resume card with an actions menu and a readable-by-the-assistant status, the user row; the mobile drawer keeps the same order · AC-E5.15, AC-E5.16 · repo: FE · learn: flexbox layouts where one region takes the remaining height; visual hierarchy through spacing, weight and dividers; accessible menus
-- [ ] <!--e5-t12--> One icon set and real app icons: `lucide-react` replaces the hand-drawn inline SVGs; the logo is redrawn as SVG and used for the favicon, the Apple touch icon and the manifest icons · AC-E5.17, AC-E5.18 · repo: FE · learn: icon libraries and tree-shaking; why a 24-pixel PNG cannot become a sharp app icon; favicons, `manifest.json` and SVG vs raster
+- [x] <!--e5-t11--> Sidebar redesign (layout A): a scrolling conversation list with a small new-chat button, a compact resume card with an actions menu and a readable-by-the-assistant status, the user row, and a confirmation before a resume is deleted; the mobile drawer keeps the same order · AC-E5.15, AC-E5.16 · repo: FE · done in: FE#28 · learn: flexbox layouts where one region takes the remaining height; visual hierarchy through spacing, weight and dividers; accessible menus
+- [x] <!--e5-t12--> One icon set and real app icons: `lucide-react` replaces the hand-drawn inline SVGs; the logo is redrawn as SVG and used for the favicon, the Apple touch icon and the manifest icons · AC-E5.17, AC-E5.18 · repo: FE · done in: FE#27 · learn: icon libraries and tree-shaking; why a 24-pixel PNG cannot become a sharp app icon; favicons, `manifest.json` and SVG vs raster
 
 ## Concepts
 
@@ -201,3 +204,11 @@ production.
 - Built a resume-aware Claude chat with image and PDF attachments that are
   never stored, consistent rollback when a reply fails, and an honest
   "unavailable" state when the server has no key.
+- `e5-t12`: replaced 34 hand-drawn icons at seven sizes with one icon set
+  behind an `<Icon>` component whose size scale is enforced by the type — a
+  pixel size no longer compiles — and redrew a 24-pixel logo as SVG for sharp
+  favicons and app icons.
+- `e5-t11`: rebuilt the sidebar's hierarchy, surfaced a backend state users
+  could not see (whether the assistant can read each resume), added a
+  confirmation to a one-click delete, and caught an overflow-clipping bug by
+  rendering the result, which the unit tests could not.
