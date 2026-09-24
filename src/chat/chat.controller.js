@@ -7,6 +7,8 @@ const NotFoundException = require("../exceptions/NotFound.exception");
 const { isObjectId } = require("../utils/objectId");
 const { prepare } = require("./attachments");
 const logger = require("../utils/logger");
+const AppException = require("../exceptions/app.exception");
+const { openEventStream } = require("../utils/sse");
 const { ensureAllExtracted } = require("../resumes/resume.service");
 
 /** How many earlier turns to replay. Older context is dropped, not summarised. */
@@ -60,12 +62,14 @@ const getMessages = async (req, res) => {
 };
 
 /**
- * Sends a message and returns Claude's reply.
+ * Everything before the model is called: validates attachments, opens or
+ * finds the conversation, stores the user's message, and gathers what the
+ * model will be given.
  *
  * Without `:id` in the path a new conversation is started, so the client does
  * not need a separate call to open one.
  */
-const sendMessage = async (req, res) => {
+async function startTurn(req) {
     const userId = req.user.id;
     const { content, attachments } = req.body;
 
@@ -73,15 +77,13 @@ const sendMessage = async (req, res) => {
     // should leave no conversation and no message behind.
     const { blocks, metadata } = await prepare(attachments);
 
-    let conversation;
-    if (req.params.id) {
-        conversation = await findOwnConversation(req.params.id, userId);
-    } else {
-        conversation = await Conversation.create({
-            user: userId,
-            title: titleFrom(content, metadata),
-        });
-    }
+    const isNewConversation = !req.params.id;
+    const conversation = isNewConversation
+        ? await Conversation.create({
+              user: userId,
+              title: titleFrom(content, metadata),
+          })
+        : await findOwnConversation(req.params.id, userId);
 
     const userMessage = await Message.create({
         conversation: conversation._id,
@@ -107,38 +109,141 @@ const sendMessage = async (req, res) => {
     // requiring a migration to have been run or the user to re-upload.
     const resumes = await ensureAllExtracted(storedResumes);
 
-    let reply;
-    try {
-        reply = await claudeService.createReply({
-            user,
-            resumes,
-            history,
-            attachmentBlocks: blocks,
-        });
-    } catch (error) {
-        // Don't leave a user turn with no answer hanging in the transcript.
-        await Message.deleteOne({ _id: userMessage._id });
-        if (!req.params.id) {
-            await Conversation.deleteOne({ _id: conversation._id });
-        }
-        throw error;
-    }
+    return {
+        userId,
+        conversation,
+        isNewConversation,
+        userMessage,
+        request: { user, resumes, history, attachmentBlocks: blocks },
+    };
+}
 
+/** Don't leave a user turn with no answer hanging in the transcript. */
+async function rollBackTurn(turn) {
+    await Message.deleteOne({ _id: turn.userMessage._id });
+    if (turn.isNewConversation) {
+        await Conversation.deleteOne({ _id: turn.conversation._id });
+    }
+}
+
+/** Stores the reply and marks the conversation as recently active. */
+async function finishTurn(turn, reply) {
     const assistantMessage = await Message.create({
-        conversation: conversation._id,
-        user: userId,
+        conversation: turn.conversation._id,
+        user: turn.userId,
         role: "assistant",
         content: reply.text,
         usage: reply.usage,
     });
 
-    conversation.lastMessageAt = new Date();
-    await conversation.save();
+    turn.conversation.lastMessageAt = new Date();
+    await turn.conversation.save();
+
+    return assistantMessage;
+}
+
+/** Sends a message and returns Claude's reply in one response. */
+const sendMessage = async (req, res) => {
+    const turn = await startTurn(req);
+
+    let reply;
+    try {
+        reply = await claudeService.createReply(turn.request);
+    } catch (error) {
+        await rollBackTurn(turn);
+        throw error;
+    }
+
+    const assistantMessage = await finishTurn(turn, reply);
 
     res.status(201).json({
         success: true,
-        data: { conversation, userMessage, assistantMessage },
+        data: {
+            conversation: turn.conversation,
+            userMessage: turn.userMessage,
+            assistantMessage,
+        },
     });
+};
+
+/**
+ * What a client may be told about a failure that happened mid-stream.
+ * AppException and its subclasses carry a message written for users, as the
+ * error middleware assumes; anything else is logged and described generally.
+ */
+function publicError(error) {
+    if (error instanceof AppException) {
+        return { status: error.status, message: error.message };
+    }
+    logger.error("Chat stream failed", { message: error.message, stack: error.stack });
+    return { status: 500, message: "Something went wrong. Please try again." };
+}
+
+/**
+ * Sends a message and streams Claude's reply as server-sent events.
+ *
+ * Events, in order:
+ *
+ * - `start`    `{ conversation, userMessage }`: the turn is stored.
+ * - `thinking` `{ text }`: a piece of the model's reasoning summary.
+ * - `text`     `{ text }`: a piece of the answer.
+ * - `done`     `{ conversation, userMessage, assistantMessage }`: the reply
+ *   as stored. The client shows this, not the pieces it assembled, so what
+ *   was shown is what a reload shows, including when a late refusal
+ *   replaced the partial answer.
+ * - `error`    `{ status, message }`: the turn failed and was rolled back.
+ *
+ * Failures that can be known up front (no API key, a bad request, a
+ * conversation that is not the caller's) are ordinary JSON errors, because
+ * they are checked before the stream opens, while the status is still free.
+ */
+const streamMessage = async (req, res) => {
+    claudeService.assertConfigured();
+    const turn = await startTurn(req);
+
+    const stream = openEventStream(res);
+    const cancel = new AbortController();
+    let settled = false;
+
+    // "close" also fires after a normal end, hence the flag. Before the end,
+    // it means the client left: stop the model rather than pay for an answer
+    // nobody will read.
+    res.on("close", () => {
+        if (!settled) cancel.abort();
+    });
+
+    stream.send("start", {
+        conversation: turn.conversation,
+        userMessage: turn.userMessage,
+    });
+
+    try {
+        const reply = await claudeService.streamReply({
+            ...turn.request,
+            signal: cancel.signal,
+            onThinking: (text) => stream.send("thinking", { text }),
+            onText: (text) => stream.send("text", { text }),
+        });
+        const assistantMessage = await finishTurn(turn, reply);
+        settled = true;
+        stream.send("done", {
+            conversation: turn.conversation,
+            userMessage: turn.userMessage,
+            assistantMessage,
+        });
+    } catch (error) {
+        settled = true;
+        await rollBackTurn(turn);
+        if (cancel.signal.aborted) {
+            logger.info("Client left before the reply finished", {
+                conversation: turn.conversation._id.toString(),
+            });
+        } else {
+            stream.send("error", publicError(error));
+        }
+    } finally {
+        stream.close();
+    }
 };
 
 const deleteConversation = async (req, res) => {
@@ -194,6 +299,7 @@ module.exports = {
     deleteAllConversations,
     getMessages,
     sendMessage,
+    streamMessage,
     deleteConversation,
     getStatus,
 };

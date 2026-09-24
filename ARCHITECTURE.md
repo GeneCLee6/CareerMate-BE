@@ -122,6 +122,26 @@ throws 503, the service still starts, and `/chat/status` reports
 **History length**: the most recent 40 messages (`HISTORY_LIMIT`) are sent.
 Older ones are dropped; there is no summarisation yet.
 
+**Streaming**: `POST /chat/messages/stream` and
+`POST /chat/conversations/:id/messages/stream` send the same request as the
+one-shot endpoints, with thinking shown as `summarized`, and answer with
+server-sent events: `start`, then `thinking` and `text` pieces, then `done`
+carrying the stored reply, or `error`. Both paths share `startTurn`,
+`rollBackTurn` and `finishTurn` in the controller and `buildRequest`,
+`toAppError` and `toReply` in the service, so they cannot drift apart.
+
+- Anything knowable up front (no key, bad input, someone else's
+  conversation) is checked **before** the stream opens and returns a normal
+  JSON error; once headers are sent the status is fixed at 200.
+- The client renders the `done` payload, not the pieces it assembled, so the
+  screen matches a reload — including when a refusal that survives the
+  fallback replaces a partial answer.
+- If the client disconnects, the model request is aborted and the turn is
+  rolled back, so nobody pays for an answer nobody will read.
+- A comment line every 15 seconds keeps proxies from closing the connection
+  while the model thinks, and `X-Accel-Buffering: no` plus
+  `Cache-Control: no-transform` ask them not to buffer it.
+
 ## 6. Email
 
 `email/email.service.js` is transport; `email/email.template.js` is content.

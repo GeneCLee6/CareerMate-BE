@@ -3,6 +3,7 @@
  * need a key.
  */
 const mockCreate = jest.fn();
+const mockStream = jest.fn();
 
 class MockAPIError extends Error {
     constructor(status, message) {
@@ -13,15 +14,18 @@ class MockAPIError extends Error {
 class MockAuthenticationError extends MockAPIError {}
 class MockRateLimitError extends MockAPIError {}
 class MockBadRequestError extends MockAPIError {}
+// As in the real SDK, a user abort is itself an APIError.
+class MockAPIUserAbortError extends MockAPIError {}
 
 jest.mock("@anthropic-ai/sdk", () => {
     const Anthropic = jest.fn().mockImplementation(() => ({
-        beta: { messages: { create: mockCreate } },
+        beta: { messages: { create: mockCreate, stream: mockStream } },
     }));
     Anthropic.APIError = MockAPIError;
     Anthropic.AuthenticationError = MockAuthenticationError;
     Anthropic.RateLimitError = MockRateLimitError;
     Anthropic.BadRequestError = MockBadRequestError;
+    Anthropic.APIUserAbortError = MockAPIUserAbortError;
     return Anthropic;
 });
 
@@ -44,6 +48,7 @@ const reply = (text, extra = {}) => ({
 
 beforeEach(() => {
     mockCreate.mockReset();
+    mockStream.mockReset();
 });
 
 describe("buildSystemPrompt", () => {
@@ -325,5 +330,115 @@ describe("attachments in the message list", () => {
             { role: "user", content: "hi" },
         ]);
         expect(mapped).toEqual([{ role: "user", content: "hi" }]);
+    });
+});
+
+/**
+ * A stand-in for the SDK's message stream: async-iterable events, then
+ * `finalMessage()`. A thrown `error` rejects the iteration, as a failed or
+ * aborted request does.
+ */
+function fakeStream(events, final, { error } = {}) {
+    return {
+        async *[Symbol.asyncIterator]() {
+            for (const event of events) yield event;
+            if (error) throw error;
+        },
+        finalMessage: jest.fn().mockResolvedValue(final),
+    };
+}
+
+const textDelta = (text) => ({
+    type: "content_block_delta",
+    index: 1,
+    delta: { type: "text_delta", text },
+});
+const thinkingDelta = (thinking) => ({
+    type: "content_block_delta",
+    index: 0,
+    delta: { type: "thinking_delta", thinking },
+});
+
+describe("streamReply", () => {
+    const base = {
+        user: { fullName: "Gene Lee" },
+        resumes: [],
+        history: [{ role: "user", content: "Help me with my resume" }],
+    };
+
+    it("hands over thinking and text as they arrive, then the finished reply", async () => {
+        mockStream.mockReturnValue(
+            fakeStream(
+                [thinkingDelta("Reading the resume. "), textDelta("Start "), textDelta("with metrics.")],
+                reply("Start with metrics."),
+            ),
+        );
+        const thinking = [];
+        const text = [];
+
+        const result = await claudeService.streamReply({
+            ...base,
+            onThinking: (t) => thinking.push(t),
+            onText: (t) => text.push(t),
+        });
+
+        expect(thinking).toEqual(["Reading the resume. "]);
+        expect(text).toEqual(["Start ", "with metrics."]);
+        expect(result).toMatchObject({ text: "Start with metrics.", refused: false });
+        expect(result.usage).toEqual({ inputTokens: 10, outputTokens: 20, model: "claude-opus-5" });
+    });
+
+    it("sends the same request as createReply, with summarised thinking", async () => {
+        mockStream.mockReturnValue(fakeStream([], reply("ok")));
+        const signal = new AbortController().signal;
+
+        await claudeService.streamReply({ ...base, signal });
+
+        const [body, options] = mockStream.mock.calls[0];
+        expect(body).toMatchObject({
+            model: "claude-opus-5",
+            fallbacks: "default",
+            betas: ["server-side-fallback-2026-07-01"],
+            output_config: { effort: "medium" },
+            thinking: { type: "adaptive", display: "summarized" },
+        });
+        expect(body.messages).toEqual([{ role: "user", content: "Help me with my resume" }]);
+        expect(options).toEqual({ signal });
+    });
+
+    it("replaces a refusal that survives the fallback with the refusal text", async () => {
+        mockStream.mockReturnValue(
+            fakeStream([textDelta("Partial ")], reply("Partial ", { stop_reason: "refusal" })),
+        );
+
+        const result = await claudeService.streamReply(base);
+
+        expect(result.refused).toBe(true);
+        expect(result.text).toMatch(/can't help with that/);
+    });
+
+    it("passes an abort through unchanged, not as an outage", async () => {
+        const abort = new MockAPIUserAbortError(undefined, "Request was aborted.");
+        mockStream.mockReturnValue(fakeStream([textDelta("Half")], null, { error: abort }));
+
+        await expect(claudeService.streamReply(base)).rejects.toBe(abort);
+    });
+
+    it("maps an upstream failure mid-stream the same way createReply does", async () => {
+        mockStream.mockReturnValue(
+            fakeStream([textDelta("Half")], null, { error: new MockAPIError(500, "boom") }),
+        );
+
+        await expect(claudeService.streamReply(base)).rejects.toMatchObject({
+            status: 502,
+            message: "The assistant is unavailable. Please try again.",
+        });
+    });
+
+    it("reports a rate limit as 429", async () => {
+        mockStream.mockReturnValue(
+            fakeStream([], null, { error: new MockRateLimitError(429, "slow down") }),
+        );
+        await expect(claudeService.streamReply(base)).rejects.toMatchObject({ status: 429 });
     });
 });

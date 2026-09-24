@@ -160,7 +160,22 @@ full field list is in `.env.example`.
 > The sender address must be verified in Brevo under *Senders, domains, IPs*.
 > An unverified sender is rejected with `Sender not valid`.
 
-## 8. Pre-launch checklist
+## 8. Streaming through the host
+
+Chat replies stream as server-sent events. Anything between the app and
+the browser that buffers or compresses responses turns the stream back
+into one late block. The app sends `X-Accel-Buffering: no` and
+`Cache-Control: no-transform`, and has no compression middleware; do not
+add one in front of `/v1/chat/*/stream`. After a deploy, check that pieces
+arrive over time rather than all at once:
+
+```bash
+curl -N -X POST https://<api>/v1/chat/messages/stream \
+  -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+  -d '{"content":"Say hello in ten words."}'
+```
+
+## 9. Pre-launch checklist
 
 - [ ] `NODE_ENV=production`
 - [ ] `JWT_SECRET` replaced with a fresh random value, not the development one

@@ -26,4 +26,16 @@ chatRouter.post(
     chatController.sendMessage,
 );
 
+// The same, with the reply streamed as server-sent events.
+chatRouter.post(
+    "/messages/stream",
+    validateBody(sendMessageSchema),
+    chatController.streamMessage,
+);
+chatRouter.post(
+    "/conversations/:id/messages/stream",
+    validateBody(sendMessageSchema),
+    chatController.streamMessage,
+);
+
 module.exports = chatRouter;

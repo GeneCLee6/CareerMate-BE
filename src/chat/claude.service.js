@@ -178,6 +178,89 @@ function extractText(content) {
         .trim();
 }
 
+/** Refuses early with 503, before a caller commits to anything, if no key is set. */
+function assertConfigured() {
+    getClient();
+}
+
+/** The request both the streaming and the one-shot paths send. */
+function buildRequest({ user, resumes, history, attachmentBlocks = [] }) {
+    return {
+        model: MODEL,
+        max_tokens: MAX_TOKENS,
+        // Rescue a policy decline on the same call rather than failing.
+        betas: ["server-side-fallback-2026-07-01"],
+        fallbacks: "default",
+        thinking: { type: "adaptive" },
+        output_config: { effort: EFFORT },
+        system: buildSystemPrompt(user, resumes),
+        messages: toApiMessages(history, attachmentBlocks),
+    };
+}
+
+/**
+ * Turns an SDK error into one the error middleware can report. Typed
+ * classes, most specific first — never match on message text.
+ */
+function toAppError(error) {
+    // A cancelled request is not a failure of the service. It is checked
+    // first because the SDK's abort error is itself an APIError.
+    if (error instanceof Anthropic.APIUserAbortError) {
+        return error;
+    }
+    if (error instanceof Anthropic.AuthenticationError) {
+        logger.error("Anthropic rejected the API key");
+        return new AppException(503, "The AI assistant is not configured correctly.");
+    }
+    if (error instanceof Anthropic.RateLimitError) {
+        return new AppException(
+            429,
+            "The assistant is busy right now. Please try again shortly.",
+        );
+    }
+    if (error instanceof Anthropic.BadRequestError) {
+        logger.error("Anthropic rejected the request", { message: error.message });
+        return new BadRequestException("That message could not be sent.");
+    }
+    if (error instanceof Anthropic.APIError) {
+        logger.error("Anthropic API error", {
+            status: error.status,
+            message: error.message,
+        });
+        return new AppException(502, "The assistant is unavailable. Please try again.");
+    }
+    return error;
+}
+
+const REFUSAL_TEXT =
+    "I can't help with that one. Ask me about your resume, interviews, or career planning and I'll do my best.";
+
+/** Reads the finished message into what the caller stores and shows. */
+function toReply(response) {
+    const usage = {
+        inputTokens: response.usage?.input_tokens,
+        outputTokens: response.usage?.output_tokens,
+        model: response.model,
+    };
+
+    // A refusal is an HTTP 200, so check before reading the content. When
+    // it comes mid-stream, the partial text already sent is discarded: the
+    // caller replaces it with this.
+    if (response.stop_reason === "refusal") {
+        logger.info("Claude declined a chat request", {
+            category: response.stop_details?.category ?? null,
+        });
+        return { text: REFUSAL_TEXT, usage, refused: true };
+    }
+
+    const text = extractText(response.content);
+    return {
+        text: text || "Sorry, I didn't catch that. Could you rephrase?",
+        usage,
+        refused: false,
+    };
+}
+
 /**
  * Sends the conversation to Claude and returns the reply plus token usage.
  *
@@ -188,80 +271,74 @@ async function createReply({ user, resumes, history, attachmentBlocks = [] }) {
 
     let response;
     try {
-        response = await anthropic.beta.messages.create({
-            model: MODEL,
-            max_tokens: MAX_TOKENS,
-            // Rescue a policy decline on the same call rather than failing.
-            betas: ["server-side-fallback-2026-07-01"],
-            fallbacks: "default",
-            thinking: { type: "adaptive" },
-            output_config: { effort: EFFORT },
-            system: buildSystemPrompt(user, resumes),
-            messages: toApiMessages(history, attachmentBlocks),
-        });
+        response = await anthropic.beta.messages.create(
+            buildRequest({ user, resumes, history, attachmentBlocks }),
+        );
     } catch (error) {
-        // Typed classes, most specific first — never match on message text.
-        if (error instanceof Anthropic.AuthenticationError) {
-            logger.error("Anthropic rejected the API key");
-            throw new AppException(
-                503,
-                "The AI assistant is not configured correctly.",
-            );
-        }
-        if (error instanceof Anthropic.RateLimitError) {
-            throw new AppException(
-                429,
-                "The assistant is busy right now. Please try again shortly.",
-            );
-        }
-        if (error instanceof Anthropic.BadRequestError) {
-            logger.error("Anthropic rejected the request", {
-                message: error.message,
-            });
-            throw new BadRequestException("That message could not be sent.");
-        }
-        if (error instanceof Anthropic.APIError) {
-            logger.error("Anthropic API error", {
-                status: error.status,
-                message: error.message,
-            });
-            throw new AppException(
-                502,
-                "The assistant is unavailable. Please try again.",
-            );
-        }
-        throw error;
+        throw toAppError(error);
     }
+    return toReply(response);
+}
 
-    // A refusal is an HTTP 200, so check before reading the content.
-    if (response.stop_reason === "refusal") {
-        logger.info("Claude declined a chat request", {
-            category: response.stop_details?.category ?? null,
-        });
-        return {
-            text: "I can't help with that one. Ask me about your resume, interviews, or career planning and I'll do my best.",
-            usage: {
-                inputTokens: response.usage?.input_tokens,
-                outputTokens: response.usage?.output_tokens,
-                model: response.model,
+/**
+ * Like `createReply`, but hands over the reply as it is written.
+ *
+ * `onThinking` receives pieces of a readable summary of the model's
+ * reasoning, `onText` pieces of the answer. Both may be called many times,
+ * and thinking always comes before the answer it leads to. The resolved
+ * value is the finished reply, exactly as `createReply` would return it.
+ *
+ * Aborting `signal` cancels the request upstream, so a user who leaves does
+ * not go on paying for an answer nobody will read; the promise then rejects
+ * with the SDK's abort error.
+ *
+ * With server-side fallbacks, a model that declines part-way is replaced on
+ * the same stream and the text already sent stays valid. Only a refusal that
+ * survives the fallback ends the reply as a refusal (see `toReply`).
+ */
+async function streamReply({
+    user,
+    resumes,
+    history,
+    attachmentBlocks = [],
+    onThinking = () => {},
+    onText = () => {},
+    signal,
+}) {
+    const anthropic = getClient();
+
+    let response;
+    try {
+        const stream = anthropic.beta.messages.stream(
+            {
+                ...buildRequest({ user, resumes, history, attachmentBlocks }),
+                // "summarized" returns a readable summary of the reasoning;
+                // the default, "omitted", streams thinking with no text, which
+                // looks exactly like the frozen wait this replaces.
+                thinking: { type: "adaptive", display: "summarized" },
             },
-        };
+            { signal },
+        );
+
+        for await (const event of stream) {
+            if (event.type !== "content_block_delta") continue;
+            if (event.delta.type === "thinking_delta") {
+                onThinking(event.delta.thinking);
+            } else if (event.delta.type === "text_delta") {
+                onText(event.delta.text);
+            }
+        }
+        response = await stream.finalMessage();
+    } catch (error) {
+        throw toAppError(error);
     }
-
-    const text = extractText(response.content);
-
-    return {
-        text: text || "Sorry, I didn't catch that. Could you rephrase?",
-        usage: {
-            inputTokens: response.usage?.input_tokens,
-            outputTokens: response.usage?.output_tokens,
-            model: response.model,
-        },
-    };
+    return toReply(response);
 }
 
 module.exports = {
     createReply,
+    streamReply,
+    assertConfigured,
     isConfigured,
     buildSystemPrompt,
     extractText,
