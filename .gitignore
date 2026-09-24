@@ -5,3 +5,5 @@ node_modules/
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
 tmp/
+# Eval runs: large, and full of model output. Summaries go in the PR.
+evals/results/
