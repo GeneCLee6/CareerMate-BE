@@ -71,5 +71,5 @@ upload failure cannot be reproduced with it.
 ## Current gaps
 
 Open tasks are the unticked boxes in `docs/PRD/`. Version 1's are route-level
-integration tests (`e0-t14`), an authenticated sending domain (`e1-t07`)
-and streamed replies (`e5-t08`); version 2 starts at `e6-t01`.
+integration tests (`e0-t14`) and an authenticated sending domain
+(`e1-t07`); version 2 starts at `e6-t01`.
