@@ -96,7 +96,8 @@ again.
 - Indexes: `{ user: 1, createdAt: -1 }` for the list, `{ user: 1, status: 1 }`
   for the filter.
 - Extraction reuses the Anthropic client from `src/chat/claude.service.js`
-  and asks for a JSON schema through structured outputs, so the reply is
+  at effort `low` (see `e6-evals.md`, Effort by route), and asks for a JSON
+  schema through structured outputs, so the reply is
   valid JSON by construction rather than parsed out of prose.
 - Delete removes the job's chunks (Epic E8) in the same request. Until Epic E8
   exists there is nothing to remove, but the hook is in place from `e7-t03`.

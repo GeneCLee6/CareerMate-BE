@@ -11,8 +11,8 @@ what applies to every epic and links here.
 | E2 | [`e2-sign-in.md`](e2-sign-in.md) | Sign-in, sessions, password recovery | Done |
 | E3 | [`e3-profile.md`](e3-profile.md) | Profile, onboarding, settings | Done |
 | E4 | [`e4-resumes.md`](e4-resumes.md) | Resume upload, text extraction, download | Done |
-| E5 | [`e5-ai-conversation.md`](e5-ai-conversation.md) | The assistant: chat, attachments, dictation, history | Done |
-| E6 | [`e6-evals.md`](e6-evals.md) | An evaluation harness and three evals that measure answer quality | Next |
+| E5 | [`e5-ai-conversation.md`](e5-ai-conversation.md) | The assistant: chat, attachments, dictation, history | Streaming next |
+| E6 | [`e6-evals.md`](e6-evals.md) | An evaluation harness and three evals that measure answer quality | After streaming |
 | E7 | [`e7-saved-jobs.md`](e7-saved-jobs.md) | Saving job ads, extracting their fields, tracking applications | Planned |
 | E8 | [`e8-rag.md`](e8-rag.md) | Answers grounded in saved jobs: chunking, embeddings, vector search, tool use | Planned |
 
@@ -27,10 +27,11 @@ New epics start from [`_template.md`](_template.md).
 
 ## Order of work
 
-Version 1's open tasks (`e0-t14`, `e1-t07`, `e5-t08`) are taken when
-needed. Version 2 is not built one epic after another; tasks are taken in
-this order, so each one builds on something already merged:
+Tasks are taken in this order, so each one builds on something already
+merged:
 
+0. **E5 `e5-t09`, `e5-t08`, `e5-t10`**: a waiting indicator, then streamed
+   replies, so the assistant stops looking frozen while it thinks.
 1. **E6 `e6-t01`–`e6-t08`**: the eval harness and the `resume-review` eval.
    These need no new feature, and every later step is then measured, not
    guessed.
@@ -38,6 +39,9 @@ this order, so each one builds on something already merged:
 3. **E8 `e8-t01`–`e8-t10`**: RAG over saved jobs.
 4. **E6 `e6-t09`–`e6-t10`**: the `retrieval` and `grounded-answers` evals,
    which need E8 to exist.
+
+Version 1's other open tasks (`e0-t14` integration tests, `e1-t07` a
+sending domain) are taken when needed.
 
 ## Rules
 

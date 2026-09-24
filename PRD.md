@@ -49,8 +49,8 @@ The checkboxes there are the only record of progress.
 | [E2 — Sign-in and password recovery](docs/PRD/e2-sign-in.md) | `/v1/auth` sign-in, sessions, reset | ✅ Done |
 | [E3 — Profile](docs/PRD/e3-profile.md) | `/v1/users`, onboarding, settings | ✅ Done |
 | [E4 — Resumes](docs/PRD/e4-resumes.md) | `/v1/upload`, `/v1/resumes`, text extraction | ✅ Done |
-| [E5 — AI conversation](docs/PRD/e5-ai-conversation.md) | `/v1/chat`, attachments, dictation, history | ✅ Done; streaming open |
-| [E6 — Evidence of answer quality](docs/PRD/e6-evals.md) | Eval harness and three evals | Planned — next |
+| [E5 — AI conversation](docs/PRD/e5-ai-conversation.md) | `/v1/chat`, attachments, dictation, history | ✅ Done; streaming and a waiting indicator next |
+| [E6 — Evidence of answer quality](docs/PRD/e6-evals.md) | Eval harness and three evals | Planned — after E5's streaming |
 | [E7 — Saved jobs](docs/PRD/e7-saved-jobs.md) | `/v1/jobs`, extraction, application tracker | Planned |
 | [E8 — Answers grounded in saved jobs](docs/PRD/e8-rag.md) | Chunking, embeddings, vector search, tool use | Planned |
 

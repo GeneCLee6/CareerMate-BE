@@ -46,17 +46,22 @@ RAG features of Epic E8 as they are built.
 ### Functional
 
 - `npm run eval:<name>` runs one eval end to end. Optional flags choose the
-  configurations to compare and a case limit for quick trial runs.
+  configurations to compare, a case limit for quick trial runs, and the
+  number of runs per case.
+- Calls go through the **Message Batches API** by default: half the price
+  of the same request sent live, in exchange for waiting minutes rather than
+  seconds. `--sync` sends live requests instead, for small trial runs.
 - Each run writes `evals/results/<name>/<timestamp>.json` holding: the git
   commit, every configuration, every case's output and scores, token usage,
   estimated cost, and latency. It prints a summary table with one row per
   configuration.
 - Before calling any API, the runner estimates the run's cost and refuses
-  to start above `EVAL_BUDGET_USD` (default 25), unless `--yes` is passed.
+  to start above `EVAL_BUDGET_USD` (default 5), unless `--yes` is passed.
 - Datasets live in `evals/datasets/<name>/` as JSON and are validated
   against a zod schema. That validation *is* part of `npm test`: it costs
   nothing and catches a malformed dataset before money is spent on it.
-- The `resume-review` eval compares four configurations:
+- The `resume-review` eval compares up to four configurations, in two
+  stages:
 
   | Config | Effort | Resume reaches the model as |
   | --- | --- | --- |
@@ -65,17 +70,27 @@ RAG features of Epic E8 as they are built.
   | `medium-pdf` | medium | the PDF itself, as a document block |
   | `high-pdf` | high | the PDF itself, as a document block |
 
-- Each configuration is run twice per resume, so the table shows spread as
-  well as average.
+  **Stage 1** runs only `medium-text` and `high-text`: is more effort worth
+  it on today's input? **Stage 2** adds the PDF configurations, and runs
+  only if the owner decides after stage 1 that it is worth paying for.
+- Each configuration runs once per resume by default. `--runs 2` repeats
+  a run when two configurations score close enough that the difference
+  could be noise.
 - The request under test is built by the **same code the product uses**,
   not a copy. An eval of a copy measures the copy.
 
 ### Non-functional
 
-- Cost: a full `resume-review` run is about 160 reviews plus 160 judge calls.
-  At Opus-class pricing that is roughly US$15–25; the exact estimate comes
-  from `evals/pricing.js`, which cites its source and date. Trial runs use
-  `--limit` and cost cents.
+- Cost: the system under test stays on the product's model, Claude Opus 5,
+  because that is what is being measured. The judge runs on Claude
+  Sonnet 5, which costs 40% as much per token, and is trusted only after
+  it passes the hand-label check (AC-E6.5); if it fails, the judge moves
+  to Opus 5. With batching, stage 1 (12 resumes × 2 configurations) costs
+  about US$1 and a full four-configuration run about US$2–3. The estimate
+  comes from `evals/pricing.js`, which cites its source and date. The whole
+  epic is expected to cost US$5–10.
+- The Anthropic Console workspace running evals has a monthly spend limit,
+  so a bug cannot run up an unbounded bill.
 - Isolation: evals never read the production database and never need it.
 - Reproducibility: model ids, effort and prompt text are written into every
   results file, so an old result can be understood without the old code.
@@ -110,11 +125,25 @@ evals/
 | Cost | US$ per review, from the response's token usage |
 | Latency | Seconds per review, median |
 
-**The judge.** Claude at high effort, returning structured output: for each
+**The judge.** Claude Sonnet 5 at effort `high`, returning structured
+output: for each
 planted issue `{ id, found, evidence }`, where `evidence` quotes the part of
 the review that addresses it; a list of unsupported claims; a specificity
 score. It sees the resume, the list of planted issues and the review — never
 which configuration produced it.
+
+**Effort by route.** Effort trades thoroughness for tokens. The starting
+points, until an eval says otherwise:
+
+| Route | Effort | Why |
+| --- | --- | --- |
+| General chat | `medium` | Today's setting; conversational work rarely repays more |
+| Resume review | decided by this eval | The question stage 1 answers |
+| Job field extraction (E7) | `low` | The answer is already in the text |
+| The eval judge | `high` | Grading must be careful; batching makes the wait irrelevant |
+
+Thinking stays on everywhere. Lowering effort, not disabling thinking, is
+how a route is made cheaper.
 
 **Trusting the judge.** The owner labels at least 20 reviews by hand — for
 each planted issue, was it found? — before looking at the judge's verdicts.
@@ -133,10 +162,10 @@ unchecked judge are not reported as results.
 - [ ] **AC-E6.3** — Given `npm test` or CI, then no eval runs and no paid API
   is called; given a malformed dataset file, then `npm test` fails naming
   the file and field.
-- [ ] **AC-E6.4** — Given at least 20 synthetic resumes, each with 2–4 planted
+- [ ] **AC-E6.4** — Given at least 12 synthetic resumes, each with 2–4 planted
   issues from the owner's taxonomy, when `eval:resume-review` runs, then
   issue recall, unsupported claims, specificity, cost and latency are shown
-  for all four configurations, each from two runs.
+  per configuration, for the stage-1 pair and, if run, the stage-2 pair.
 - [ ] **AC-E6.5** — Given at least 20 hand-labelled reviews, when the judge
   grades them, then the agreement rate is printed next to every score, and
   a run whose judge falls below the threshold is marked as not valid.
@@ -154,11 +183,11 @@ unchecked judge are not reported as results.
 
 ## Tasks
 
-- [ ] <!--e6-t01--> Harness skeleton: `evals/` layout, `run.js` CLI, concurrency-limited runner, results file, summary table, `pricing.js`, budget guard, `evals/results/` gitignored, evals excluded from jest. Proven with a trivial "echo" eval that needs no API · AC-E6.1, AC-E6.2, AC-E6.3 · repo: BE · learn: what an eval is — dataset, case, output, grader, metric; why evals are run by hand
+- [ ] <!--e6-t01--> Harness skeleton: `evals/` layout, `run.js` CLI, concurrency-limited runner, results file, summary table, `pricing.js`, budget guard, `evals/results/` gitignored, evals excluded from jest. Message Batches submission and polling, with `--sync` for trial runs. Proven with a trivial "echo" eval that needs no API · AC-E6.1, AC-E6.2, AC-E6.3 · repo: BE · learn: what an eval is — dataset, case, output, grader, metric; why evals are run by hand; batch vs live requests
 - [ ] <!--e6-t02--> Issue taxonomy and dataset schema: the owner writes the list of resume problems worth catching (with a definition and an example each); zod schema for a resume case; schema test in `npm test` · AC-E6.3 · repo: BE · learn: defining quality before measuring it; why the taxonomy is a product decision, not a technical one
-- [ ] <!--e6-t03--> Synthetic resume generator: a script that asks Claude for a resume with given planted issues and renders it to PDF; the owner reviews every generated resume and keeps at least 20 · AC-E6.4 · repo: BE · learn: synthetic data and its limits; why every generated case is read by a human
+- [ ] <!--e6-t03--> Synthetic resume generator: a script that asks Claude for a resume with given planted issues and renders it to PDF; the owner reviews every generated resume and keeps at least 12 · AC-E6.4 · repo: BE · learn: synthetic data and its limits; why every generated case is read by a human
 - [ ] <!--e6-t04--> Resume input mode: the product's request builder takes `resumeInput: "text" | "pdf"` (default `text`, product behaviour unchanged) and sends the PDF as a document block when asked; the eval calls this builder · AC-E6.4 · repo: BE · learn: document blocks and what the model sees in each mode; why an eval must call the real code path
-- [ ] <!--e6-t05--> The judge: `rubric.md` written by the owner, `llmJudge.js` with structured output, blind to configuration; `eval:resume-review` runs all four configs twice · AC-E6.4 · repo: BE · learn: LLM-as-judge, rubrics with anchored scores, structured outputs, blinding
+- [ ] <!--e6-t05--> The judge: `rubric.md` written by the owner, `llmJudge.js` with structured output, blind to configuration, on Claude Sonnet 5; `eval:resume-review` runs stage 1 · AC-E6.4 · repo: BE · learn: LLM-as-judge, rubrics with anchored scores, structured outputs, blinding
 - [ ] <!--e6-t06--> Hand labels and agreement: a small labelling script that shows one review at a time and records the owner's verdicts; agreement rate computed and printed with every result · AC-E6.5 · repo: BE · learn: validating a grader; agreement rate; why an unchecked LLM judge is not evidence
 - [ ] <!--e6-t07--> Run, read, decide: a full valid run; the decision and its numbers written into `ARCHITECTURE.md` §5 · AC-E6.6 · repo: BE · learn: reading an eval table — averages, spread, cost per point of quality; when a difference is real
 - [ ] <!--e6-t08--> Apply the decision: the assistant switches to the winning configuration, if it differs from today's · AC-E6.6 · repo: BE · learn: turning a measurement into a change, and saying so in the pull request
@@ -189,8 +218,9 @@ reach the same verdict. It is the judge's own accuracy, and it bounds how
 much any result can be trusted. First met in `e6-t06`.
 
 **Variance.** The same configuration can score differently on two runs.
-Running each case twice shows how big that spread is, so a difference
-smaller than the spread is not mistaken for an improvement. First met in
+Repeating a close comparison (`--runs 2`) shows how big that spread is,
+so a difference smaller than the spread is not mistaken for an
+improvement. First met in
 `e6-t07`.
 
 **Recall@k and MRR.** Retrieval metrics. Recall@k: of the relevant items,
@@ -208,7 +238,8 @@ First met in `e6-t10`.
 | --- | --- |
 | Synthetic resumes are too obviously flawed, so every configuration scores 100% | The owner reviews each one; the taxonomy includes subtle issues; a first small run checks the scores are not saturated |
 | The judge favours longer reviews | The rubric scores specificity against anchors, not length; hand labels catch it |
-| Cost overrun | Budget guard before any call; `--limit` for trial runs |
+| Cost overrun | Budget guard before any call; `--limit` for trial runs; a Console spend limit |
+| A cheaper judge grades badly | It must pass the hand-label check before its scores count; otherwise it moves to Opus 5 |
 | Pricing changes | `pricing.js` records source and date; cost is an estimate and is labelled as one |
 
 ## Open questions
@@ -216,10 +247,10 @@ First met in `e6-t10`.
 - [ ] **Q:** What agreement rate must the judge reach before its scores
       count? Proposed: 80%.
       **A:** _(unanswered)_
-- [ ] **Q:** Budget per full run? Proposed: US$25, set as the default
-      `EVAL_BUDGET_USD`. A full run is needed about three times in this
-      epic (e6-t06, e6-t07, and once more after any rubric change).
-      **A:** _(unanswered)_
+- [x] **Q:** Budget per full run?
+      **A:** US$5 as the default `EVAL_BUDGET_USD`, reached by judging
+      with Sonnet 5, batching every call, and running in two stages. The
+      epic as a whole is budgeted at US$5–10.
 
 ## Test plan
 
