@@ -1,6 +1,6 @@
 ---
 title: E5 — AI conversation
-status: in-progress
+status: done
 epic: E5
 owner: GeneCLee6
 depends_on: [e3-t01, e4-t01]
@@ -104,20 +104,20 @@ useful answer.**
 
 **As a user, I want long answers to appear as they are written.**
 
-- [ ] **AC-E5.10** — Given a long reply, then its text starts appearing within
+- [x] **AC-E5.10** — Given a long reply, then its text starts appearing within
   a few seconds instead of all at once at the end.
-- [ ] **AC-E5.11** — Given I have sent a message and no text has arrived yet,
+- [x] **AC-E5.11** — Given I have sent a message and no text has arrived yet,
   then an animated indicator shows the assistant is working, and after a
   few seconds it also shows how long I have been waiting; with reduced
   motion turned on in my system, the indicator does not animate.
-- [ ] **AC-E5.12** — Given the model is thinking before it answers, then I see
+- [x] **AC-E5.12** — Given the model is thinking before it answers, then I see
   a short summary of what it is working on, which gives way to the answer
   when the answer starts.
-- [ ] **AC-E5.13** — Given the stream fails part-way, then the partial reply
+- [x] **AC-E5.13** — Given the stream fails part-way, then the partial reply
   disappears, my message is rolled back as it is today, and the error is
   shown; given I leave the page mid-reply, then the model call is
   cancelled.
-- [ ] **AC-E5.14** — Given a streamed reply, when I reload the conversation,
+- [x] **AC-E5.14** — Given a streamed reply, when I reload the conversation,
   then the stored reply is exactly what was shown.
 
 **As a user, I want the assistant screen to be easy to find my way around.**
@@ -149,9 +149,9 @@ useful answer.**
 - [x] <!--e5-t05--> Usable dictation: browser languages, live text, no cut-offs · AC-E5.6 · repo: FE · done in: FE#17, FE#20 · learn: `navigator.languages`, `Intl.DisplayNames`, continuous recognition
 - [x] <!--e5-t06--> Delete one conversation or all history · AC-E5.9 · repo: BE, FE · done in: BE#18, FE#19 · learn: a right to delete; why bulk delete matters when the UI shows only the latest conversation
 - [x] <!--e5-t07--> Conversation list, loading state and AI status in the UI · AC-E5.3, AC-E5.7 · repo: FE · done in: FE#23 · learn: telling the user what the system is doing
-- [ ] <!--e5-t08--> Streaming endpoint: server-sent events for sending and continuing a conversation, using the SDK's message stream with thinking shown as `summarized`; events for thinking summary, text, done (with the stored message ids) and error; the reply stored only once complete; rollback on failure; the model call aborted when the client disconnects; checked on Render that nothing buffers the stream · AC-E5.10, AC-E5.12, AC-E5.13, AC-E5.14 · repo: BE · learn: what streaming does and does not change (time to first token, not total time or cost); server-sent events; handling a failure after output has started
-- [ ] <!--e5-t09--> Waiting indicator: three animated dots in the assistant bubble, an elapsed-seconds counter after five seconds, no animation under `prefers-reduced-motion` · AC-E5.11 · repo: FE · learn: perceived latency; CSS keyframes; accessible motion
-- [ ] <!--e5-t10--> Streaming in the chat screen: read the event stream with `fetch` (EventSource cannot send a POST with an auth header), render text as it arrives, show the thinking summary until the answer starts, remove a partial reply on error, abort on leaving the page · AC-E5.10, AC-E5.12, AC-E5.13 · repo: FE · learn: `ReadableStream` and parsing server-sent events by hand; `AbortController`
+- [x] <!--e5-t08--> Streaming endpoint: server-sent events for sending and continuing a conversation, using the SDK's message stream with thinking shown as `summarized`; events for thinking summary, text, done (with the stored message ids) and error; the reply stored only once complete; rollback on failure; the model call aborted when the client disconnects; checked on Render that nothing buffers the stream · AC-E5.10, AC-E5.12, AC-E5.13, AC-E5.14 · repo: BE · done in: BE#26 · learn: what streaming does and does not change (time to first token, not total time or cost); server-sent events; handling a failure after output has started
+- [x] <!--e5-t09--> Waiting indicator: three animated dots in the assistant bubble, an elapsed-seconds counter after five seconds, no animation under `prefers-reduced-motion` · AC-E5.11 · repo: FE · done in: FE#29 · learn: perceived latency; CSS keyframes; accessible motion
+- [x] <!--e5-t10--> Streaming in the chat screen: read the event stream with `fetch` (EventSource cannot send a POST with an auth header), render text as it arrives, show the thinking summary until the answer starts, remove a partial reply on error, abort on leaving the page · AC-E5.10, AC-E5.12, AC-E5.13 · repo: FE · done in: FE#30 · learn: `ReadableStream` and parsing server-sent events by hand; `AbortController`
 - [x] <!--e5-t11--> Sidebar redesign (layout A): a scrolling conversation list with a small new-chat button, a compact resume card with an actions menu and a readable-by-the-assistant status, the user row, and a confirmation before a resume is deleted; the mobile drawer keeps the same order · AC-E5.15, AC-E5.16 · repo: FE · done in: FE#28 · learn: flexbox layouts where one region takes the remaining height; visual hierarchy through spacing, weight and dividers; accessible menus
 - [x] <!--e5-t12--> One icon set and real app icons: `lucide-react` replaces the hand-drawn inline SVGs; the logo is redrawn as SVG and used for the favicon, the Apple touch icon and the manifest icons · AC-E5.17, AC-E5.18 · repo: FE · done in: FE#27 · learn: icon libraries and tree-shaking; why a 24-pixel PNG cannot become a sharp app icon; favicons, `manifest.json` and SVG vs raster
 
@@ -212,3 +212,13 @@ production.
   could not see (whether the assistant can read each resume), added a
   confirmation to a one-click delete, and caught an overflow-clipping bug by
   rendering the result, which the unit tests could not.
+- `e5-t08` / `e5-t10`: streamed replies end to end with server-sent events.
+  The backend shares one code path with the one-shot endpoint, checks what
+  it can before the stream opens so errors keep real status codes, and
+  aborts the upstream request when the user leaves. The frontend reads the
+  stream with `fetch` because `EventSource` cannot POST or send an auth
+  header, and shows the model's reasoning summary so a long think reads as
+  work. Verified against the real API and through Render in production.
+- `e5-t09`: a waiting indicator that explains a cold start instead of
+  looking frozen, respects reduced motion, and keeps a per-second counter
+  out of the screen reader's live region.
