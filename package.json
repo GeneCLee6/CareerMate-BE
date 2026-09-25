@@ -11,7 +11,9 @@
     "email:preview": "node scripts/preview-emails.js",
     "seed:dev-user": "node scripts/seed-dev-user.js",
     "backfill:resume-text": "node scripts/backfill-resume-text.js",
-    "migrate:profile-codes": "node scripts/migrate-profile-codes.js"
+    "migrate:profile-codes": "node scripts/migrate-profile-codes.js",
+    "eval": "node evals/run.js",
+    "eval:echo": "node evals/run.js echo"
   },
   "repository": {
     "type": "git",

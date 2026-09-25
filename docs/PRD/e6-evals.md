@@ -1,6 +1,6 @@
 ---
 title: E6 — Evidence of answer quality (evals)
-status: ready
+status: in-progress
 epic: E6
 owner: GeneCLee6
 depends_on: []   # e6-t01 to e6-t08 need nothing; e6-t09 needs e8-t05, e6-t10 needs e8-t08
@@ -152,10 +152,10 @@ unchecked judge are not reported as results.
 
 ## Acceptance criteria
 
-- [ ] **AC-E6.1** — Given an eval name, when I run `npm run eval:<name>`, then
+- [x] **AC-E6.1** — Given an eval name, when I run `npm run eval:<name>`, then
   a results file with configurations, per-case outputs, scores, tokens, cost
   and latency is written, and a summary table is printed.
-- [ ] **AC-E6.2** — Given an estimated cost above `EVAL_BUDGET_USD`, when I
+- [x] **AC-E6.2** — Given an estimated cost above `EVAL_BUDGET_USD`, when I
   start a run without `--yes`, then it stops before any API call and prints
   the estimate.
 - [ ] **AC-E6.3** — Given `npm test` or CI, then no eval runs and no paid API
@@ -182,7 +182,7 @@ unchecked judge are not reported as results.
 
 ## Tasks
 
-- [ ] <!--e6-t01--> Harness skeleton: `evals/` layout, `run.js` CLI, concurrency-limited runner, results file, summary table, `pricing.js`, budget guard, `evals/results/` gitignored, evals excluded from jest. Message Batches submission and polling, with `--sync` for trial runs. Proven with a trivial "echo" eval that needs no API · AC-E6.1, AC-E6.2, AC-E6.3 · repo: BE · learn: what an eval is — dataset, case, output, grader, metric; why evals are run by hand; batch vs live requests
+- [x] <!--e6-t01--> Harness skeleton: `evals/` layout, `run.js` CLI, concurrency-limited runner, results file, summary table, `pricing.js`, budget guard, `evals/results/` gitignored, evals excluded from jest. Message Batches submission and polling, with `--sync` for trial runs. Proven with a trivial "echo" eval that needs no API · AC-E6.1, AC-E6.2, AC-E6.3 · repo: BE · done in: BE#29 · learn: what an eval is — dataset, case, output, grader, metric; why evals are run by hand; batch vs live requests
 - [ ] <!--e6-t02--> Issue taxonomy and dataset schema: the owner writes the list of resume problems worth catching (with a definition and an example each); zod schema for a resume case; schema test in `npm test` · AC-E6.3 · repo: BE · learn: defining quality before measuring it; why the taxonomy is a product decision, not a technical one
 - [ ] <!--e6-t03--> Synthetic resume generator: a script that asks Claude for a resume with given planted issues and renders it to PDF; the owner reviews every generated resume and keeps at least 12 · AC-E6.4 · repo: BE · learn: synthetic data and its limits; why every generated case is read by a human
 - [ ] <!--e6-t04--> Resume input mode: the product's request builder takes `resumeInput: "text" | "pdf"` (default `text`, product behaviour unchanged) and sends the PDF as a document block when asked; the eval calls this builder · AC-E6.4 · repo: BE · learn: document blocks and what the model sees in each mode; why an eval must call the real code path
@@ -261,4 +261,7 @@ First met in `e6-t10`.
 
 ## Interview notes
 
-<!-- One line per merged task. -->
+- `e6-t01`: built an eval harness from scratch in Node — batched requests at
+  half price by default, a concurrency-limited live mode for trials, per-run
+  cost estimation that refuses to send anything over budget, and results
+  files that record the commit, every output and every score.

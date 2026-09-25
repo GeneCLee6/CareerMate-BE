@@ -1,0 +1,5 @@
+[
+    { "id": "greeting", "input": "Hello there", "expected": "HELLO THERE" },
+    { "id": "role", "input": "Junior frontend developer", "expected": "JUNIOR FRONTEND DEVELOPER" },
+    { "id": "city", "input": "Melbourne", "expected": "MELBOURNE" }
+]
