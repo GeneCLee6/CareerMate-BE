@@ -13,7 +13,9 @@
     "backfill:resume-text": "node scripts/backfill-resume-text.js",
     "migrate:profile-codes": "node scripts/migrate-profile-codes.js",
     "eval": "node evals/run.js",
-    "eval:echo": "node evals/run.js echo"
+    "eval:echo": "node evals/run.js echo",
+    "eval:generate-resumes": "node evals/resume-review/generate.js",
+    "eval:review-resumes": "node evals/resume-review/review.js"
   },
   "repository": {
     "type": "git",
@@ -47,6 +49,7 @@
   "devDependencies": {
     "jest": "^30.5.1",
     "nodemon": "^3.1.14",
+    "pdfkit": "^0.20.2",
     "supertest": "^7.2.2"
   },
   "jest": {

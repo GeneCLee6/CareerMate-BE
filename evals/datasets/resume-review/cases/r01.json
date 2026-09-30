@@ -1,0 +1,23 @@
+{
+  "id": "r01",
+  "source": "synthetic",
+  "persona": {
+    "targetRole": "Junior Frontend Developer",
+    "location": "Melbourne"
+  },
+  "resumeText": "PRIYA NANDAKUMAR\nEmail: priya.nandakumar@example.com | Phone: 0400 123 456\nLinkedIn: linkedin.com/in/priyanandakumar\n\nSUMMARY\nRecent Master of IT graduate with hands-on experience building web applications using React, TypeScript and Node.js. Completed a capstone project delivering a full-stack booking platform and an internship contributing to a customer-facing dashboard. Looking to bring strong front-end fundamentals and a collaborative approach to a Junior Frontend Developer role.\n\nSKILLS\nJavaScript, TypeScript, React, HTML, CSS, Redux, Node.js, Express, REST APIs, Git, Jest, Figma, Tailwind CSS\n\nEXPERIENCE\nFrontend Developer Intern, BrightPath Digital\n02/2024 - 07/2024\nSupported the web team on a customer dashboard product built with React and Redux.\n- Rebuilt the dashboard's filter component using React hooks, replacing an older class-based version.\n- Wrote Jest unit tests for the new filter component to cover edge cases the team had previously handled manually.\n- Worked with the design team to translate Figma mockups into responsive Tailwind CSS layouts.\n- Improved the loading experience of the dashboard's main table by introducing skeleton loading states.\n\nJunior IT Support Assistant (Part-time, while studying), Campus Tech Helpdesk\n03/2022 - 12/2022\n- Resolved student and staff laptop and Wi-Fi connectivity issues during scheduled shifts.\n- Documented common troubleshooting steps in a shared knowledge base used by the helpdesk team.\n- Assisted with onboarding new helpdesk volunteers by walking them through ticketing software.\n\nPROJECTS\nTableTime - Restaurant Booking Platform\nGitHub: github.com/priyanandakumar/tabletime\n- Built a full-stack booking application with React front-end and Express/Node.js back-end, including a calendar view and email confirmation flow.\n- Implemented authentication with JWT and protected booking routes for logged-in users.\n- Deployed the app using Netlify (frontend) and Render (backend) for the capstone demo.\n\nExpenseSplit - Group Expense Tracker\nGitHub: github.com/priyanandakumar/expensesplit\n- Created a React and Redux app that lets users split shared expenses and track balances between group members.\n- Added CSV export of expense history using a lightweight Node.js API endpoint.\n\nEDUCATION\nMaster of Information Technology\nGreenfield University\n02/2023 - 11/2024\n- Capstone project: TableTime booking platform (see Projects).\n- Relevant coursework: Web Application Development, Human-Computer Interaction, Software Engineering Practice.\n\nBachelor of Computer Applications\nSunrise College\n06/2018 - 05/2021\n\nCERTIFICATIONS\n- freeCodeCamp: Responsive Web Design (2023)\n- freeCodeCamp: JavaScript Algorithms and Data Structures (2023)",
+  "pdfFile": "r01.pdf",
+  "plantedIssues": [
+    {
+      "issue": "no-metrics",
+      "where": "Experience > BrightPath Digital, 4th bullet",
+      "evidence": "Improved the loading experience of the dashboard's main table by introducing skeleton loading states."
+    },
+    {
+      "issue": "missing-local-context",
+      "where": "Header / whole resume"
+    }
+  ],
+  "reviewedBy": null,
+  "reviewedOn": null
+}

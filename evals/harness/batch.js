@@ -6,12 +6,18 @@
  * `requests` is [{ id, params }]. Resolves with a Map from id to
  * { message } or { error }. Results come back in any order, so they are
  * matched on `custom_id`, never on position.
+ *
+ * The batch id is reported through `onSubmitted` as soon as it exists. A
+ * batch keeps running on the server if this process stops, and is already
+ * being paid for, so the id is what lets `collectBatch` fetch the results
+ * later instead of paying for the same work twice.
  */
 async function runBatch({
     client,
     requests,
     pollMs = 30_000,
     onProgress = () => {},
+    onSubmitted = () => {},
     sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
 }) {
     if (requests.some((r) => r.params.betas)) {
@@ -25,17 +31,42 @@ async function runBatch({
     const created = await client.messages.batches.create({
         requests: requests.map((r) => ({ custom_id: r.id, params: r.params })),
     });
+    onSubmitted(created.id);
 
-    let batch = created;
+    return collectBatch({
+        client,
+        batchId: created.id,
+        ids: requests.map((r) => r.id),
+        pollMs,
+        onProgress,
+        sleep,
+        first: created,
+    });
+}
+
+/**
+ * Waits for an existing batch to end and returns its results, keyed by
+ * custom_id. Sends no new requests and costs nothing more.
+ */
+async function collectBatch({
+    client,
+    batchId,
+    ids,
+    pollMs = 30_000,
+    onProgress = () => {},
+    sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    first,
+}) {
+    let batch = first ?? (await client.messages.batches.retrieve(batchId));
     while (batch.processing_status !== "ended") {
         onProgress(batch);
         await sleep(pollMs);
-        batch = await client.messages.batches.retrieve(created.id);
+        batch = await client.messages.batches.retrieve(batchId);
     }
     onProgress(batch);
 
     const byId = new Map();
-    for await (const entry of await client.messages.batches.results(created.id)) {
+    for await (const entry of await client.messages.batches.results(batchId)) {
         const { type } = entry.result;
         if (type === "succeeded") {
             byId.set(entry.custom_id, { message: entry.result.message });
@@ -49,10 +80,10 @@ async function runBatch({
         }
     }
     // A request with no result at all would otherwise vanish from the report.
-    for (const r of requests) {
-        if (!byId.has(r.id)) byId.set(r.id, { error: "no result returned" });
+    for (const id of ids ?? []) {
+        if (!byId.has(id)) byId.set(id, { error: "no result returned" });
     }
-    return { batchId: created.id, results: byId };
+    return { batchId, results: byId };
 }
 
-module.exports = { runBatch };
+module.exports = { runBatch, collectBatch };
