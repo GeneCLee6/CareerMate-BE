@@ -1,0 +1,27 @@
+{
+  "id": "example-01",
+  "source": "synthetic",
+  "persona": {
+    "targetRole": "Junior Frontend Developer",
+    "location": "Melbourne"
+  },
+  "resumeText": "ALEX CHEN\nalex.chen@example.com | 0400 000 000 | linkedin.com/in/alex-chen-example\n\nSUMMARY\nPassionate, hard-working team player with a strong desire to learn and grow in a fast-paced environment.\n\nSKILLS\nJavaScript, TypeScript, React, Node.js, Docker, AWS, Kubernetes, Git, HTML, CSS\n\nEXPERIENCE\nFrontend Developer Intern — Brightline Digital, Melbourne (02/2025 – 07/2025)\n- Built the booking form for a physiotherapy clinic's website in React and TypeScript, with validation that cut incomplete submissions.\n- Wrote unit tests for the form with Jest and React Testing Library.\n- Worked with the designer to turn Figma mock-ups into reusable components.\n\nKitchen Hand — Harbour Cafe, Melbourne (06/2023 – 01/2025)\n- Prepared food and kept the kitchen clean during busy weekend shifts.\n\nPROJECTS\nRecipe Finder — React, TypeScript\nSearch recipes by ingredient using a public recipes API, with saved favourites stored in local storage.\n\nBudget Tracker — React, Node.js, MongoDB\nTrack spending by category with monthly charts; users sign in and their data is kept per account.\n\nEDUCATION\nMaster of Information Technology — Monash University (2023 – 2024)\nBachelor of Science (Mathematics) — National Taiwan University (2017 – 2021)",
+  "plantedIssues": [
+    {
+      "issue": "generic-summary",
+      "where": "Summary",
+      "evidence": "Passionate, hard-working team player with a strong desire to learn and grow in a fast-paced environment."
+    },
+    {
+      "issue": "unsupported-skills",
+      "where": "Skills: Docker, AWS, Kubernetes",
+      "evidence": "Docker, AWS, Kubernetes"
+    },
+    {
+      "issue": "missing-links",
+      "where": "Projects: Recipe Finder, Budget Tracker"
+    }
+  ],
+  "reviewedBy": null,
+  "reviewedOn": null
+}

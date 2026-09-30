@@ -49,6 +49,10 @@ evals/
 │   ├── cost.js         tokens × price
 │   ├── budget.js       the spend guard
 │   └── report.js       summary table and results file
+├── resume-review/     the first real eval
+│   ├── taxonomy.js     the resume problems it checks for
+│   ├── schema.js       what a test case must look like
+│   └── dataset.js      loads and validates the cases
 ├── <name>/eval.js      one eval
 └── datasets/<name>/    its cases
 ```
