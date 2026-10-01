@@ -1,0 +1,24 @@
+{
+  "id": "r02",
+  "source": "synthetic",
+  "persona": {
+    "targetRole": "Junior Backend Developer",
+    "location": "Sydney"
+  },
+  "resumeText": "JAMES O'CONNELL\nSydney, NSW | 0400 123 456 | james.oconnell@example.com | linkedin.com/in/jamesoconnell\nAustralian Citizen — full working rights\n\nSUMMARY\nRecent coding bootcamp graduate with hands-on experience building REST APIs in Node.js and Python. Completed a short backend contract building internal tooling for a logistics startup. Looking to grow as a Junior Backend Developer in Sydney, focusing on clean API design and database work.\n\nSKILLS\nJavaScript, Node.js, Express, Python, SQL, PostgreSQL, Git, REST APIs, Docker, AWS, Kubernetes, Jest\n\nEXPERIENCE\n\nBackend Developer (Contract)\nRouteWise Logistics, Sydney — 02/2024 to 04/2024\nShort-term contract to support the internal tools team while they hired a permanent developer.\n- Responsible for writing REST APIs for the internal shipment tracking tool.\n- Attended daily stand-ups and sprint planning with the tools team.\n- Wrote unit tests for new endpoints using Jest.\n- Maintained the PostgreSQL schema for shipment records.\n\nCustomer Support Officer\nBrightPath Telecom, Sydney — 06/2022 to 12/2023\n- Handled inbound customer calls regarding billing and account issues.\n- Escalated technical faults to the network operations team.\n- Trained two new starters on the internal ticketing system.\n\nEDUCATION\n\nDiploma of Software Development\nSydney Coding Academy — 08/2023 to 01/2024\n- Full-time intensive program covering JavaScript, Node.js, SQL and REST API design.\n- Capstone project: built a task management API with authentication and role-based access.\n\nBachelor of Commerce\nMacquarie University, Sydney — 02/2018 to 11/2021\n\nPROJECTS\n\nTaskFlow API\n- Built a task management REST API with Node.js, Express and PostgreSQL, including JWT authentication.\n- Added input validation and error handling middleware to prevent malformed requests from reaching the database.\n- Wrote 40+ Jest tests covering core endpoints.\n\nRecipe Finder\n- Built a Python Flask app that lets users search recipes by ingredient using a public API.\n- Implemented caching to reduce repeated calls to the external API.\n\nExpense Splitter\n- Small command-line tool in Python for splitting shared expenses between housemates.\n- Added CSV export of settlement summaries.\n\nREFEREES\nAvailable on request",
+  "pdfFile": "r02.pdf",
+  "plantedIssues": [
+    {
+      "issue": "duties-not-achievements",
+      "where": "Experience > RouteWise Logistics, bullets 1-2",
+      "evidence": "Responsible for writing REST APIs for the internal shipment tracking tool.\n- Attended daily stand-ups and sprint planning with the tools team."
+    },
+    {
+      "issue": "unsupported-skills",
+      "where": "Skills section",
+      "evidence": "Docker, AWS, Kubernetes"
+    }
+  ],
+  "reviewedBy": null,
+  "reviewedOn": null
+}

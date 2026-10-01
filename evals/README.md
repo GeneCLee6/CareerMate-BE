@@ -36,6 +36,28 @@ Each run prints a table — one row per configuration — and writes everything
 to `evals/results/<name>/<timestamp>.json` (gitignored): the commit, the
 configurations, every output and score, tokens and estimated cost.
 
+## The resume-review dataset
+
+Test resumes are generated, then read by a person before they are used.
+
+```bash
+npm run eval:generate-resumes                 # every case in plan.js not yet on disk
+npm run eval:generate-resumes -- --only r03   # one case, e.g. after rejecting it
+npm run eval:review-resumes                   # approve or reject each unreviewed case
+```
+
+`resume-review/plan.js` fixes who each applicant is and which problems from
+`taxonomy.js` are planted in their resume. The generator asks Claude Sonnet 5
+for the resume as structured output, checks that the planted problems match
+the plan and that every quoted piece of evidence really is in the resume,
+renders a PDF next to the JSON, and saves the case as unreviewed. The review
+tool shows each one with its planted problems; approving stamps the reviewer
+and date, and only approved cases are used in runs.
+
+A generated resume can still contain a problem that was not planned. Recall
+is measured on the planted problems only, so this does not skew it, but a
+reviewer should reject a case where an unplanned problem is glaring.
+
 ## Layout
 
 ```
@@ -52,7 +74,11 @@ evals/
 ├── resume-review/     the first real eval
 │   ├── taxonomy.js     the resume problems it checks for
 │   ├── schema.js       what a test case must look like
-│   └── dataset.js      loads and validates the cases
+│   ├── dataset.js      loads and validates the cases
+│   ├── plan.js         which resumes to generate, with which problems
+│   ├── generate.js     generates them (structured output) and renders PDFs
+│   ├── render.js       plain text to PDF
+│   └── review.js       the owner's review, one case at a time
 ├── <name>/eval.js      one eval
 └── datasets/<name>/    its cases
 ```

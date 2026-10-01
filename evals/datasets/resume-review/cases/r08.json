@@ -1,0 +1,29 @@
+{
+  "id": "r08",
+  "source": "synthetic",
+  "persona": {
+    "targetRole": "Junior Frontend Developer",
+    "location": "Sydney"
+  },
+  "resumeText": "JAMES CARTWRIGHT\nSydney, NSW | 0400 111 222 | james.cartwright@example.com\nAustralian Citizen - full working rights\n\nSUMMARY\nCareer-changer moving from retail management into frontend development. Completed a full-time coding bootcamp and built several personal projects using HTML, CSS and JavaScript, with growing experience in React. Bring strong communication and problem-solving skills from six years leading retail teams, now applying them to building user-friendly web interfaces.\n\nSKILLS\nHTML, CSS, JavaScript, React, Git, Responsive Design, Basic Node.js\n\nEXPERIENCE\n\nStore Manager - Northside Menswear, Sydney\n03/2018 - 01/2023\nManaged day-to-day operations of a retail store including rostering, stock control and customer service.\n- Trained and supervised a team of 8 sales staff across weekday and weekend shifts.\n- Handled customer complaints and escalations, maintaining store reputation.\n- Coordinated with head office on seasonal promotions and visual merchandising.\n- Oversaw stocktake and inventory ordering processes.\n- Opened and closed the store, including cash handling and banking procedures.\n- Organised staff schedules to cover public holidays and peak trading periods.\n- Ran weekly team meetings to discuss sales targets and store presentation.\n- Liaised with suppliers regarding delivery schedules and stock issues.\n\nAssistant Manager - Northside Menswear, Sydney\n06/2015 - 03/2018\nSupported the store manager in daily operations and staff supervision.\n- Assisted with rostering and stock replenishment.\n- Covered management duties during manager's absence.\n- Helped train new casual staff on POS systems and customer service standards.\n\nSales Assistant - Northside Menswear, Sydney\n02/2013 - 06/2015\n- Provided customer service on the shop floor.\n- Processed sales transactions and returns.\n- Restocked shelves and maintained store presentation standards.\n\nJunior Frontend Developer (Bootcamp Capstone) - CodeForge Academy, Sydney\n02/2023 - 07/2023\nFull-time intensive program covering modern frontend development.\n- Learned HTML, CSS, JavaScript fundamentals and React through weekly projects.\n- Improved the loading experience of a group project by optimising asset usage.\n- Collaborated with a team of four using Git for version control on a shared repository.\n- Presented final capstone project to a panel of industry mentors.\n\nPROJECTS\n\nRecipe Finder App\nA React application that lets users search for recipes by ingredient and save favourites to local storage.\n- Built with React, JavaScript and CSS Grid for a responsive layout.\n- Improved the search experience by adding debounced input handling.\n\nPersonal Budget Tracker\nA simple web app for tracking monthly expenses and visualising spending categories.\n- Built with HTML, CSS and vanilla JavaScript, using Chart.js for graphs.\n- Refactored the codebase midway through the project to improve readability.\n\nRetail Roster Planner\nA tool concept inspired by scheduling problems from previous retail experience, built to practice React state management.\n- Allows managers to input staff availability and generate a weekly roster.\n- Focused on clean UI and form validation.\n\nEDUCATION\n\nDiploma of Retail Management\nSydney Business Institute, Sydney\n2012 - 2013\n\nFull Stack Web Development Bootcamp\nCodeForge Academy, Sydney\n02/2023 - 07/2023\n- Covered HTML, CSS, JavaScript, React and Git fundamentals.\n\nREFEREES\nAvailable on request.",
+  "pdfFile": "r08.pdf",
+  "plantedIssues": [
+    {
+      "issue": "no-metrics",
+      "where": "Experience > Junior Frontend Developer (Bootcamp Capstone), 2nd bullet; Projects > Recipe Finder App, 2nd bullet",
+      "evidence": "Improved the loading experience of a group project by optimising asset usage."
+    },
+    {
+      "issue": "missing-links",
+      "where": "Projects section",
+      "evidence": "Recipe Finder App\nA React application that lets users search for recipes by ingredient and save favourites to local storage."
+    },
+    {
+      "issue": "irrelevant-content",
+      "where": "Experience > Store Manager, Assistant Manager, Sales Assistant roles",
+      "evidence": "- Opened and closed the store, including cash handling and banking procedures.\n- Organised staff schedules to cover public holidays and peak trading periods.\n- Ran weekly team meetings to discuss sales targets and store presentation.\n- Liaised with suppliers regarding delivery schedules and stock issues."
+    }
+  ],
+  "reviewedBy": null,
+  "reviewedOn": null
+}

@@ -8,7 +8,7 @@ const path = require("path");
 const { costOf } = require("./cost");
 const { checkBudget, budgetFromEnv, DEFAULT_BUDGET_USD } = require("./budget");
 const { runCases } = require("./runCases");
-const { runBatch } = require("./batch");
+const { runBatch, collectBatch } = require("./batch");
 const { summarise, formatTable } = require("./report");
 const { runEval } = require("./runEval");
 const { parseArgs } = require("../run");
@@ -155,6 +155,27 @@ describe("runBatch", () => {
         expect(results.get("one").message.content[0].text).toBe("1");
         expect(results.get("two").error).toMatch(/invalid_request: bad/);
         expect(results.get("three").error).toBe("no result returned");
+    });
+
+    it("reports the batch id as soon as it is submitted", async () => {
+        const client = fakeBatchClient([]);
+        const submitted = jest.fn();
+        await runBatch({ client, requests: [], onSubmitted: submitted, sleep: async () => {} });
+        expect(submitted).toHaveBeenCalledWith("b1");
+    });
+
+    it("collects an existing batch without submitting anything", async () => {
+        const client = fakeBatchClient([
+            { custom_id: "one", result: { type: "succeeded", message: message("1") } },
+        ]);
+        const { results } = await collectBatch({
+            client,
+            batchId: "b1",
+            ids: ["one"],
+            sleep: async () => {},
+        });
+        expect(client.messages.batches.create).not.toHaveBeenCalled();
+        expect(results.get("one").message.content[0].text).toBe("1");
     });
 
     it("refuses beta requests it cannot yet send", async () => {

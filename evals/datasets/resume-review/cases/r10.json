@@ -1,0 +1,34 @@
+{
+  "id": "r10",
+  "source": "synthetic",
+  "persona": {
+    "targetRole": "Graduate Full-stack Developer",
+    "location": "Brisbane"
+  },
+  "resumeText": "JAMES CARTWRIGHT\nBrisbane, QLD | 0400 123 456 | james.cartwright@example.com | linkedin.com/in/jamescartwright\nAustralian Citizen - full working rights\n\nSUMMARY\nRecent IT graduate with hands-on experience building web applications during internship and university projects. Comfortable working across the stack from database design to responsive UI, and keen to continue developing skills in a full-stack developer role in Brisbane.\n\nSKILLS\nJavaScript, TypeScript, React, Node.js, Express, PostgreSQL, HTML/CSS, Git, Docker, AWS, Kubernetes\n\nEXPERIENCE\n\nSoftware Engineering Intern - Bramble Digital Solutions, Brisbane\n03/2023 - 08/2023\n- Built and maintained REST API endpoints in Node.js/Express used by the internal client portal.\n- Fixed 14 bugs reported through the support tracker, reducing the open bug count from 22 to 8 over the internship.\n- Wrote unit tests with Jest, lifting test coverage on the orders module from 40% to 75%.\n- Participate in daily stand-ups and sprint planning with a team of five developers.\n\nHelpdesk Support Officer (Casual) - Coral Bay Retail Group, Brisbane\n11/2021 - 02/2022\n- Resolved point-of-sale software issues for store staff over phone and email.\n- Documented common fixes in a shared knowledge base article used by other support staff.\n\nJunior Web Developer - Nettle & Co, Brisbane\n06/2022 - 04/2023\n- Developed and styled marketing landing pages using HTML, CSS and vanilla JavaScript for small business clients.\n- Lead the migration of three client sites from a legacy CMS to a static site generator.\n- Coordinating with clients directly to gather requirements and provide revisions.\n\nPROJECTS\n\nCampus Marketplace - Full-stack web app for buying and selling secondhand textbooks between students.\n- Designed a PostgreSQL schema with 8 tables covering listings, users and messaging.\n- Implemented JWT-based authentication and a React front end with search and filtering.\n- Deployed the app for a class demonstration attended by 20 students.\n\nBudget Tracker CLI - Command-line tool for personal expense tracking.\n- Built with Node.js, reading and writing to a local JSON file for persistence.\n- Added CSV export feature so users could open reports in Excel.\n\nRecipe Sharing Platform - Group capstone project for a social recipe-sharing site.\n- Contributed the comment and rating system using Express and PostgreSQL.\n- Presented the project to a panel of three industry judges as part of the final assessment.\n\nEDUCATION\n\nBachelor of Information Technology\nGriffith University, Brisbane\n02/2020 - 11/2022\n- Relevant coursework: Web Application Development, Database Systems, Software Engineering Principles, Cloud Computing.\n- Capstone project: Recipe Sharing Platform (see Projects).\n\nCERTIFICATIONS\n- freeCodeCamp - Responsive Web Design Certification, 2021",
+  "pdfFile": "r10.pdf",
+  "plantedIssues": [
+    {
+      "issue": "unsupported-skills",
+      "where": "Skills",
+      "evidence": "Docker, AWS, Kubernetes"
+    },
+    {
+      "issue": "unexplained-dates",
+      "where": "Experience",
+      "evidence": "Junior Web Developer - Nettle & Co, Brisbane\n06/2022 - 04/2023"
+    },
+    {
+      "issue": "missing-links",
+      "where": "Projects",
+      "evidence": "Campus Marketplace - Full-stack web app for buying and selling secondhand textbooks between students."
+    },
+    {
+      "issue": "spelling-grammar",
+      "where": "Experience > Nettle & Co, 2nd bullet",
+      "evidence": "Lead the migration of three client sites from a legacy CMS to a static site generator."
+    }
+  ],
+  "reviewedBy": null,
+  "reviewedOn": null
+}
