@@ -1,0 +1,29 @@
+{
+  "id": "r07",
+  "source": "synthetic",
+  "persona": {
+    "targetRole": "Junior Mobile Developer",
+    "location": "Melbourne"
+  },
+  "resumeText": "JORDAN MCALLISTER\nMelbourne, VIC | 0400 123 456 | jordan.mcallister@example.com\nAustralian citizen - full working rights\n\nSUMMARY\nHard-working, passionate individual with a strong desire to learn and grow. Motivated team player who is dedicated, reliable and eager to succeed in a fast-paced environment.\n\nSKILLS\nSwift, Kotlin, Java, Firebase, REST APIs, SQLite, Git, Figma, Agile/Scrum\n\nEXPERIENCE\n\nJunior Developer (Contract)\nBrightPath Digital, Melbourne\n02/2024 - Present\n- Responsible for writing REST APIs and attending daily stand-ups.\n- Responsible for fixing bugs reported by QA team.\n- Responsible for updating Firebase database schemas as required by product team.\n- Responsible for participating in sprint planning and retrospectives.\n\nCafe Supervisor\nMillstone Coffee House, Melbourne\n06/2021 - 01/2023\n- Opened and closed the store, managed cash reconciliation and rostering for casual staff.\n- Trained new baristas on espresso equipment and customer service standards.\n\nRetail Assistant\nUrban Outfitters Co, Melbourne\n03/2019 - 07/2021\n- Assisted customers with product selection and handled point-of-sale transactions.\n\nPROJECTS\n\nTrailMate - Hiking Companion App\n- Built a native Android app using Kotlin and Firebase to let users log hikes, track distance and save favourite trails.\n- Implemented offline caching with SQLite so users could view saved trails without a connection.\n- Designed the UI in Figma before development, following Material Design guidelines.\n\nPocketBudget - Personal Finance Tracker\n- Developed an iOS app in Swift with a REST API backend to help users categorise expenses and set monthly budgets.\n- Used SQLite for local data persistence and built custom chart views to visualise spending patterns.\n\nEDUCATION\n\nDiploma of Mobile App Development\nCoderForge Academy, Melbourne\n01/2024 - 12/2024 (Boot camp - part time evenings)\n\nCertificate III in Business\nMelbourne TAFE Institute\n02/2018 - 11/2018\n\nREFERENCES\nAvailable on request",
+  "pdfFile": "r07.pdf",
+  "plantedIssues": [
+    {
+      "issue": "duties-not-achievements",
+      "where": "Experience > BrightPath Digital, all bullets",
+      "evidence": "- Responsible for writing REST APIs and attending daily stand-ups."
+    },
+    {
+      "issue": "generic-summary",
+      "where": "SUMMARY",
+      "evidence": "Hard-working, passionate individual with a strong desire to learn and grow. Motivated team player who is dedicated, reliable and eager to succeed in a fast-paced environment."
+    },
+    {
+      "issue": "unexplained-dates",
+      "where": "Experience > Cafe Supervisor and Retail Assistant dates",
+      "evidence": "06/2021 - 01/2023"
+    }
+  ],
+  "reviewedBy": null,
+  "reviewedOn": null
+}

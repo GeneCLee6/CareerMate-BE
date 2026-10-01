@@ -49,6 +49,17 @@ describe("every case in the dataset", () => {
     });
 });
 
+describe("planted 'too long'", () => {
+    it("is really long in every case that plants it", () => {
+        const { TOO_LONG_MIN_CHARS } = require("./generate");
+        for (const c of loadCases()) {
+            if (c.plantedIssues.some((p) => p.issue === "too-long")) {
+                expect([c.id, c.resumeText.length >= TOO_LONG_MIN_CHARS]).toEqual([c.id, true]);
+            }
+        }
+    });
+});
+
 describe("validateCase", () => {
     it("accepts a well-formed case", () => {
         expect(validateCase(validCase(), "fixture-01.json").id).toBe("fixture-01");

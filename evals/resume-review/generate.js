@@ -30,6 +30,14 @@ const { costOf } = require("../harness/cost");
 const { checkBudget, budgetFromEnv } = require("../harness/budget");
 
 /** Cheaper than the product's model, and writing a resume is well within it. */
+
+/**
+ * A resume with too-long planted must really be long: about 2,800 characters
+ * fill a page as rendered, so the minimum is well past two pages. The prompt
+ * asks for more, because the model tends to stop short of a length target.
+ */
+const TOO_LONG_MIN_CHARS = 7500;
+const TOO_LONG_TARGET_CHARS = 9000;
 const MODEL = "claude-sonnet-5";
 
 /** Structured output: the resume, and where each problem was planted. */
@@ -81,6 +89,9 @@ function buildPrompt(entry) {
             : `- Put ${entry.location} in the header, and a line on work rights that fits the applicant's background.`,
         "- Use plain text with section headings in capitals (SUMMARY, SKILLS, EXPERIENCE, PROJECTS, EDUCATION and so on) and '- ' for bullets. No markdown.",
         "- Dates as MM/YYYY.",
+        ...(entry.issues.includes("too-long")
+            ? [`- The planted 'too long' problem must be real: at least ${TOO_LONG_TARGET_CHARS} characters, three full pages or more, padded the way junior applicants pad — every university assignment, long paragraphs under each role, every course, hobbies and references.`]
+            : []),
         ...(entry.issues.includes("unsupported-skills")
             ? []
             : ["- Every skill in the skills section must appear in the experience or projects. Listing an unused skill is a problem you must not plant here."]),
@@ -88,7 +99,7 @@ function buildPrompt(entry) {
             ? []
             : ["- Keep dates in order with no gap longer than six months unless the resume explains it in a line (study, travel, visa, caring)."]),
         "",
-        "Then list each planted problem once, even if it shows up in several places: its id, where it is in the resume (for example 'Experience > Acme Pty Ltd, 2nd bullet'), and as evidence the exact text from the resume that shows it most clearly, copied character for character. When there is nothing to quote — something missing, or the whole resume being too long — give an empty string.",
+        "Then list each planted problem once, even if it shows up in several places: its id, where it is in the resume (for example 'Experience > Acme Pty Ltd, 2nd bullet'), and as evidence the exact text from the resume that shows it most clearly, copied character for character as one continuous piece — never joined with '...' or shortened. When there is nothing to quote — something missing, or the whole resume being too long — give an empty string.",
     ].join("\n");
 }
 
@@ -135,6 +146,11 @@ function toCase(entry, message) {
     if (planned !== reported) {
         throw new Error(`planted [${reported}] but the plan was [${planned}]`);
     }
+    if (entry.issues.includes("too-long") && output.resumeText.length < TOO_LONG_MIN_CHARS) {
+        throw new Error(
+            `too-long is planted but the resume is only ${output.resumeText.length} characters (needs ${TOO_LONG_MIN_CHARS})`,
+        );
+    }
     for (const p of output.plantedIssues) {
         if (p.evidence && !output.resumeText.includes(p.evidence)) {
             throw new Error(`evidence for ${p.issue} is not in the resume: "${p.evidence}"`);
@@ -177,7 +193,7 @@ function parseArgs(argv) {
 }
 
 /** Saves each usable result as an unreviewed case with its PDF. */
-async function saveOutcomes(outcomes, { batch }) {
+async function saveOutcomes(outcomes, { batch, collected = false }) {
     let spent = 0;
     for (const { entry, message, error } of outcomes) {
         if (error) {
@@ -194,7 +210,12 @@ async function saveOutcomes(outcomes, { batch }) {
             console.log(`${entry.id}: rejected — ${err.message}`);
         }
     }
-    console.log(`Cost about US$${spent.toFixed(3)}. Review the new cases with: npm run eval:review-resumes`);
+    console.log(
+        collected
+            ? `Nothing new was paid for; the batch cost about US$${spent.toFixed(3)} when it was submitted.`
+            : `Cost about US$${spent.toFixed(3)}.`,
+    );
+    console.log("Review the new cases with: npm run eval:review-resumes");
 }
 
 function makeClient() {
@@ -216,7 +237,7 @@ async function main() {
             onProgress: (b) => console.log(`batch ${b.id}: ${b.processing_status}`),
         });
         const outcomes = PLAN.filter((e) => results.has(e.id)).map((e) => ({ entry: e, ...results.get(e.id) }));
-        await saveOutcomes(outcomes, { batch: true });
+        await saveOutcomes(outcomes, { batch: true, collected: true });
         return;
     }
 
@@ -273,4 +294,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { buildPrompt, buildRequest, toCase, OUTPUT_SCHEMA, MODEL, parseArgs };
+module.exports = { buildPrompt, buildRequest, toCase, OUTPUT_SCHEMA, MODEL, parseArgs, TOO_LONG_MIN_CHARS };

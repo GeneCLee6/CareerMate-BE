@@ -1,0 +1,34 @@
+{
+  "id": "r12",
+  "source": "synthetic",
+  "persona": {
+    "targetRole": "Junior Frontend Developer",
+    "location": "Perth"
+  },
+  "resumeText": "DANIEL PIERCE\nPerth, WA | 0400 123 456 | daniel.pierce@example.com\nAustralian Citizen - full working rights\n\nSUMMARY\nPassionate and hard-working individual with a strong desire to learn and grow, looking to bring energy and dedication to a new team.\n\nSKILLS\nHTML, CSS, JavaScript, React, Git, Responsive Design, REST APIs\n\nEXPERIENCE\n\nFreelance Web Developer, Self-employed, Perth WA\n09/2023 - Present\n- Responsible for building small business websites using React and JavaScript.\n- Responsible for writing REST APIs for client contact forms and booking widgets.\n- Attending client meetings to gather requirements and provide updates.\n- Responsible for maintaining Git repositories for each client project.\n\nFront of House Supervisor, The Merchant Kitchen, Perth WA\n02/2019 - 06/2022\nWorked front-of-house in a busy CBD restaurant while studying web development in the evenings; the role built the client communication and calm-under-pressure skills I now bring to freelance and team-based development work.\n- Responsible for rostering staff and coordinating floor service during peak periods.\n- Trained new starters on POS systems and service standards.\n- Handled customer feedback and resolved complaints on the floor.\n\nPROJECTS\n\nLocal Cafe Finder\n- Built a React application that lets users search and filter Perth cafes by suburb and opening hours.\n- Used the Fetch API to pull data from a mock REST endpoint and render results with responsive CSS layout.\n\nRecipe Organiser\n- A JavaScript and HTML/CSS app for saving and tagging recipes, using localStorage for persistence.\n- Implemented a responsive grid layout that adapts from mobile to desktop.\n\nPersonal Portfolio Site\n- Designed and built a personal portfolio using HTML, CSS and JavaScript to showcase the above projects.\n- Included a responsive navigation menu and contact form wired to a REST API endpoint.\n\nEDUCATION\nSelf-Taught Developer, Online Courses (freeCodeCamp, The Odin Project) - Completed 08/2023\nCovered HTML, CSS, JavaScript fundamentals, React, Git and REST API integration through project-based coursework.\n\nCertificate III in Hospitality, Central TAFE, Perth WA - Completed 12/2018",
+  "pdfFile": "r12.pdf",
+  "plantedIssues": [
+    {
+      "issue": "generic-summary",
+      "where": "SUMMARY",
+      "evidence": "Passionate and hard-working individual with a strong desire to learn and grow, looking to bring energy and dedication to a new team."
+    },
+    {
+      "issue": "duties-not-achievements",
+      "where": "Experience > Freelance Web Developer, Self-employed, Perth WA",
+      "evidence": "Responsible for writing REST APIs for client contact forms and booking widgets."
+    },
+    {
+      "issue": "unexplained-dates",
+      "where": "Experience section, between Front of House Supervisor and Freelance Web Developer roles",
+      "evidence": "02/2019 - 06/2022"
+    },
+    {
+      "issue": "missing-links",
+      "where": "PROJECTS",
+      "evidence": "Built a React application that lets users search and filter Perth cafes by suburb and opening hours."
+    }
+  ],
+  "reviewedBy": null,
+  "reviewedOn": null
+}

@@ -1,0 +1,24 @@
+{
+  "id": "r04",
+  "source": "synthetic",
+  "persona": {
+    "targetRole": "Junior Data Analyst",
+    "location": "Perth"
+  },
+  "resumeText": "CHLOE NGUYEN\nPerth, WA | 0400 000 000 | chloe.nguyen@example.com\nAustralian Citizen - full working rights\n\nSUMMARY\nRecent Data Science graduate skilled in SQL, Python and dashboarding, with hands-on experience turning retail and operations data into reports that support decision-making. Looking to grow as a Junior Data Analyst in Perth.\n\nSKILLS\n- Python (pandas, NumPy)\n- SQL (Postgres, MySQL)\n- Excel (pivot tables, VLOOKUP)\n- Tableau\n- Power BI\n- Statistics and A/B testing\n\nEXPERIENCE\n\nData Analyst, Quantum Metrics Pty Ltd, Perth WA\n06/2024 - Present\n- Built weekly SQL reports summarising delivery performance across 12 regional warehouses, cutting manual reporting time from 4 hours to 45 minutes.\n- Lead the migration of ad-hoc Excel trackers into a single Power BI dashboard used by 20 staff.\n- Clean and validate incoming shipment data, flagging an average of 15 data entry errors per week before they reached the finance team.\n\nJunior Data Analyst, Insight Analytics Co, Perth WA\n03/2024 - 11/2024\n- Analysed customer churn data for a telco client, identifying a segment responsible for 18% of cancellations and presenting findings to the account manager.\n- Wrote Python scripts to automate monthly churn reports, reducing turnaround from 3 days to same-day delivery.\n- Supported senior analysts in building SQL queries against a Postgress database for ad-hoc client requests.\n\nData Analyst Intern, BrightRetail Pty Ltd, Perth WA\n02/2023 - 07/2023\n- Built a Tableau dashboard tracking sales across 40 stores, which the merchandising team now checked every morning before placing orders.\n- Cleaned and merged three years of point-of-sale data in Excel, resolving inconsistent product codes affecting 6% of records.\n- Presents findings to the merchandising team fortnightly on fast-moving stock lines.\n\nCustomer Service Officer (Part-time, while studying), Coles Supermarkets, Perth WA\n01/2021 - 12/2022\n- Handled customer enquiries and processed returns during evening and weekend shifts around university timetable.\n- Trained four new casual staff on point-of-sale procedures.\n\nPROJECTS\n\nPerth Rental Price Explorer\n- Scraped and cleaned 5,000 rental listings using Python, then built a regression model to estimate price by suburb, achieving an R-squared of 0.71.\n\nUniversity Attendance Dashboard\n- Designed a Power BI dashboard for a student society committee, visualising attendance trends across 15 events to help plan room bookings.\n\nEDUCATION\n\nBachelor of Science (Data Science), Curtin University, Perth WA\n02/2020 - 11/2023\n- Relevant units: Database Systems, Applied Statistics, Machine Learning, Data Visualisation.\n\nREFERENCES\nAvailable on request.",
+  "pdfFile": "r04.pdf",
+  "plantedIssues": [
+    {
+      "issue": "unexplained-dates",
+      "where": "Experience > Data Analyst, Quantum Metrics Pty Ltd and Junior Data Analyst, Insight Analytics Co",
+      "evidence": "06/2024 - Present"
+    },
+    {
+      "issue": "spelling-grammar",
+      "where": "Experience > Data Analyst, Quantum Metrics Pty Ltd, 2nd bullet; Experience > Junior Data Analyst, Insight Analytics Co, 3rd bullet; Experience > Data Analyst Intern, BrightRetail Pty Ltd, 3rd bullet",
+      "evidence": "Lead the migration of ad-hoc Excel trackers into a single Power BI dashboard used by 20 staff."
+    }
+  ],
+  "reviewedBy": null,
+  "reviewedOn": null
+}

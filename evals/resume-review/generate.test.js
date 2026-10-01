@@ -6,7 +6,7 @@ const os = require("os");
 const path = require("path");
 const { ISSUE_IDS } = require("./taxonomy");
 const { PLAN } = require("./plan");
-const { buildRequest, buildPrompt, toCase, MODEL, parseArgs } = require("./generate");
+const { buildRequest, buildPrompt, toCase, MODEL, parseArgs, TOO_LONG_MIN_CHARS } = require("./generate");
 const { renderResumePdf } = require("./render");
 const { approve } = require("./review");
 const { extractText } = require("../../src/resumes/resumeText");
@@ -127,6 +127,18 @@ describe("toCase", () => {
     it("rejects evidence that is not in the resume", () => {
         const invented = { ...good, plantedIssues: [good.plantedIssues[0], { ...good.plantedIssues[1], evidence: "Made things faster." }] };
         expect(() => toCase(entry, reply(invented))).toThrow(/not in the resume/);
+    });
+
+    it("rejects a 'too long' resume that is not actually long", () => {
+        const longEntry = { ...entry, issues: ["generic-summary", "too-long"] };
+        const short = {
+            resumeText: RESUME.padEnd(3000, " "),
+            plantedIssues: [good.plantedIssues[0], { issue: "too-long", where: "Whole resume", evidence: "" }],
+        };
+        expect(() => toCase(longEntry, reply(short))).toThrow(/only 3000 characters/);
+
+        const long = { ...short, resumeText: RESUME.padEnd(TOO_LONG_MIN_CHARS, " ") };
+        expect(toCase(longEntry, reply(long)).plantedIssues).toHaveLength(2);
     });
 
     it("rejects a reply that was cut off", () => {

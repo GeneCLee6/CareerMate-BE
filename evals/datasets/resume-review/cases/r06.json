@@ -1,0 +1,29 @@
+{
+  "id": "r06",
+  "source": "synthetic",
+  "persona": {
+    "targetRole": "Graduate DevOps Engineer",
+    "location": "Canberra"
+  },
+  "resumeText": "DANIEL FORSYTHE\nEmail: daniel.forsythe@example.com | Phone: 0400 000 000\nLinkedIn: linkedin.com/in/danielforsythe\n\nSUMMARY\nRecent Computer Science graduate with hands-on experience automating build pipelines and deploying containerised applications during university projects. Comfortable working in Linux environments and keen to grow into a Graduate DevOps Engineer role, applying scripting and CI/CD skills to real production systems.\n\nSKILLS\nPython, Bash, Git, Linux, CI/CD (GitHub Actions), Docker, AWS, Kubernetes, Terraform, SQL\n\nEXPERIENCE\nIT Support Assistant (Part-time) — Coastline University IT Services\n02/2022 - 11/2023\nSupported staff and students with hardware and software issues across campus computer labs.\n- Responsible for logging support tickets and escalating hardware faults to senior technicians.\n- Assisted with imaging new lab computers and installing standard software packages.\n- Attended weekly team meetings to review outstanding tickets.\n\nCasual Retail Assistant — Northfield Hardware\n06/2021 - 01/2022\n- Handled customer enquiries and processed sales transactions at the front counter.\n- Restocked shelves and maintained store presentation standards.\n\nPROJECTS\nAutomated Build Pipeline for Student Grading Tool\n03/2023 - 06/2023\n- Built a GitHub Actions pipeline that ran unit tests and linting on every pull request for a Python grading script used by a small tutoring group.\n- Wrote a Bash script to package the tool and generate release notes automatically, replacing a manual process that previously took about 20 minutes per release.\n\nPersonal Budget Tracker\n08/2022 - 11/2022\n- Developed a command-line budgeting application in Python with SQL storage, allowing users to catagorise expenses and view monthly summaries.\n- Lead the design of the database schema and later refactored it after realising the original version couldn't handle recurring transactions.\n\nEDUCATION\nBachelor of Computer Science\nCoastline University\n02/2020 - 11/2023\n- Relevant coursework: Operating Systems, Networked Systems, Software Engineering Practice, Databases.\n- Capstone project: automated testing framework for a peer's mobile app (grade: High Distinction).\n\nREFERENCES\nAvailable on request.",
+  "pdfFile": "r06.pdf",
+  "plantedIssues": [
+    {
+      "issue": "unsupported-skills",
+      "where": "Skills section",
+      "evidence": "Docker, AWS, Kubernetes, Terraform"
+    },
+    {
+      "issue": "missing-local-context",
+      "where": "Header (name/contact block)",
+      "evidence": "DANIEL FORSYTHE\nEmail: daniel.forsythe@example.com | Phone: 0400 000 000\nLinkedIn: linkedin.com/in/danielforsythe"
+    },
+    {
+      "issue": "spelling-grammar",
+      "where": "Projects > Personal Budget Tracker, bullets",
+      "evidence": "allowing users to catagorise expenses and view monthly summaries.\n- Lead the design of the database schema and later refactored it after realising the original version couldn't handle recurring transactions."
+    }
+  ],
+  "reviewedBy": null,
+  "reviewedOn": null
+}
