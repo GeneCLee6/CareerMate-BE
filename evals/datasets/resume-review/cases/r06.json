@@ -24,6 +24,6 @@
       "evidence": "allowing users to catagorise expenses and view monthly summaries.\n- Lead the design of the database schema and later refactored it after realising the original version couldn't handle recurring transactions."
     }
   ],
-  "reviewedBy": null,
-  "reviewedOn": null
+  "reviewedBy": "Gene Lee",
+  "reviewedOn": "2026-10-07"
 }
