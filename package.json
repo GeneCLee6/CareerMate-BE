@@ -14,6 +14,7 @@
     "migrate:profile-codes": "node scripts/migrate-profile-codes.js",
     "eval": "node evals/run.js",
     "eval:echo": "node evals/run.js echo",
+    "eval:resume-review": "node evals/run.js resume-review",
     "eval:generate-resumes": "node evals/resume-review/generate.js",
     "eval:review-resumes": "node evals/resume-review/review.js"
   },

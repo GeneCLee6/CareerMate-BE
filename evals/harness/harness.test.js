@@ -358,3 +358,90 @@ describe("parseArgs", () => {
         expect(() => parseArgs(["echo", "--fast"])).toThrow(/Unknown option/);
     });
 });
+
+describe("runEval with a judge", () => {
+    const judged = (verdict) => ({
+        content: [{ type: "text", text: JSON.stringify(verdict) }],
+        model: "claude-sonnet-5",
+        usage: { input_tokens: 100, output_tokens: 50 },
+    });
+    const judgeEval = {
+        loadCases: () => [{ id: "q1" }],
+        configs: { a: { model: "claude-sonnet-5" } },
+        request: (c, cfg) => ({ model: cfg.model, max_tokens: 100, messages: [{ role: "user", content: c.id }] }),
+        parse: (m) => m.content[0].text,
+        estimate: (_c, cfg) => ({ model: cfg.model, input_tokens: 100, output_tokens: 50 }),
+        judge: (c, output) => ({ model: "claude-sonnet-5", messages: [{ role: "user", content: `judge ${output}` }] }),
+        scoreJudgement: (m) => ({ scores: { good: JSON.parse(m.content[0].text).good }, judgement: {} }),
+        estimateJudge: () => ({ model: "claude-sonnet-5", input_tokens: 100, output_tokens: 50 }),
+    };
+
+    it("grades each output with the judge, never showing it the configuration", async () => {
+        const create = jest
+            .fn()
+            .mockResolvedValueOnce(message("answer"))
+            .mockResolvedValueOnce(judged({ good: 1 }));
+        const outcome = await runEval({
+            evalModule: judgeEval,
+            evalName: "j",
+            sync: true,
+            budgetUsd: 5,
+            client: { messages: { create } },
+            resultsDir: tmpDir(),
+            log: silent,
+        });
+        expect(create.mock.calls[1][0].messages[0].content).toBe("judge answer");
+        expect(JSON.stringify(create.mock.calls[1][0])).not.toMatch(/"a"/);
+        expect(outcome.summary[0].metrics.good).toBe(1);
+        // The output's cost and the judging's, both at full price.
+        expect(outcome.results[0].costUsd).toBeCloseTo(0.0014);
+    });
+
+    it("resumes a stopped run by collecting its batches instead of submitting again", async () => {
+        const results = {
+            produce: { custom_id: "a__q1__0", result: { type: "succeeded", message: message("answer") } },
+            judge: { custom_id: "a__q1__0", result: { type: "succeeded", message: judged({ good: 1 }) } },
+        };
+        const client = {
+            messages: {
+                batches: {
+                    create: jest.fn(),
+                    retrieve: jest.fn(async (id) => ({ id, processing_status: "ended" })),
+                    results: jest.fn(async (id) =>
+                        (async function* one() {
+                            yield results[id];
+                        })(),
+                    ),
+                },
+            },
+        };
+        const outcome = await runEval({
+            evalModule: judgeEval,
+            evalName: "j",
+            budgetUsd: 0, // a resumed run has already been paid for
+            client,
+            resultsDir: tmpDir(),
+            log: silent,
+            sleep: async () => {},
+            resumeState: { runId: "r1", evalName: "j", options: {}, phases: { produce: { batchId: "produce" }, judge: { batchId: "judge" } } },
+        });
+        expect(client.messages.batches.create).not.toHaveBeenCalled();
+        expect(outcome.summary[0].metrics.good).toBe(1);
+    });
+
+    it("saves the batch id as soon as it is submitted", async () => {
+        const dir = tmpDir();
+        const client = fakeBatchClient([{ custom_id: "a__q1__0", result: { type: "errored", error: { type: "overloaded_error" } } }]);
+        const outcome = await runEval({
+            evalModule: judgeEval,
+            evalName: "j",
+            budgetUsd: 5,
+            client,
+            resultsDir: dir,
+            log: silent,
+            sleep: async () => {},
+        });
+        const state = JSON.parse(fs.readFileSync(path.join(dir, "j", `${outcome.runId}.state.json`), "utf-8"));
+        expect(state.phases.produce.batchId).toBe("b1");
+    });
+});

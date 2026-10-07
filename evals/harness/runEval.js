@@ -1,6 +1,7 @@
+const fs = require("fs");
 const path = require("path");
 const { runCases } = require("./runCases");
-const { runBatch } = require("./batch");
+const { runBatch, collectBatch } = require("./batch");
 const { costOf } = require("./cost");
 const { checkBudget } = require("./budget");
 const { summarise, formatTable, writeResults } = require("./report");
@@ -11,7 +12,6 @@ const { SOURCE, CHECKED_ON } = require("../pricing");
  *
  * - `loadCases()` → [{ id, ... }]            the dataset
  * - `configs` → { name: config }             what to compare
- * - `score(case, output, config)` → { metric: number }, may be async
  *
  * and produces each output in one of two ways:
  *
@@ -19,7 +19,18 @@ const { SOURCE, CHECKED_ON } = require("../pricing");
  * - `request(case, config)` → API params     sent to the model, plus
  *   `parse(message, case, config)` → output  and
  *   `estimate(case, config)` → { model, input_tokens, output_tokens }
- *                                            for the budget check.
+ *
+ * and grades it in one of two ways:
+ *
+ * - `score(case, output, config)` → { metric: number }, may be async
+ * - `judge(case, output)` → API params for an LLM judge, plus
+ *   `scoreJudgement(message, case)` → { scores, judgement } and
+ *   `estimateJudge(case)` → { model, input_tokens, output_tokens }.
+ *   The judge is never given the configuration: it grades blind.
+ *
+ * Batched runs save their batch ids in a state file as they are submitted,
+ * so a run that stops can be resumed (`resumeState`) without paying again
+ * for work the server has already done.
  */
 
 function pickConfigs(all, names) {
@@ -34,6 +45,41 @@ function pickConfigs(all, names) {
         picked[name] = all[name];
     }
     return picked;
+}
+
+const jobId = (configName, caseId, run) => `${configName}__${caseId}__${run}`;
+
+/** Results of a batch: collected if it was already submitted, else submitted now. */
+async function batchPhase({ client, state, phase, requests, saveState, log, pollMs, sleep }) {
+    const onProgress = (b) =>
+        log(`${phase} batch ${b.id}: ${b.processing_status} ${JSON.stringify(b.request_counts ?? {})}`);
+    const known = state.phases[phase]?.batchId;
+    if (known) {
+        log(`${phase}: collecting batch ${known} submitted earlier`);
+        const { results } = await collectBatch({
+            client,
+            batchId: known,
+            ids: requests.map((r) => r.id),
+            beta: Boolean(requests[0]?.params.betas),
+            pollMs,
+            onProgress,
+            sleep,
+        });
+        return results;
+    }
+    const { results } = await runBatch({
+        client,
+        requests,
+        pollMs,
+        sleep,
+        onProgress,
+        onSubmitted: (batchId) => {
+            state.phases[phase] = { batchId };
+            saveState();
+            log(`${phase}: submitted batch ${batchId}`);
+        },
+    });
+    return results;
 }
 
 async function runEval({
@@ -51,38 +97,75 @@ async function runEval({
     log = console.log,
     pollMs,
     sleep,
+    resumeState = null,
 }) {
     const startedAt = new Date().toISOString();
     const allCases = evalModule.loadCases();
     const cases = limit ? allCases.slice(0, limit) : allCases;
     const configs = pickConfigs(evalModule.configs, configNames);
     const usesModel = typeof evalModule.request === "function";
-    const batch = usesModel && !sync;
+    const usesJudge = typeof evalModule.judge === "function";
+    const batch = (usesModel || usesJudge) && !sync;
     const mode = usesModel ? (batch ? "batch" : "sync") : "local";
 
-    // Estimate before anything is sent. A local eval costs nothing.
+    const runId = resumeState?.runId ?? startedAt.replace(/[:.]/g, "-");
+    const runDir = path.join(resultsDir, evalName);
+    const stateFile = path.join(runDir, `${runId}.state.json`);
+    const state = resumeState ?? {
+        runId,
+        evalName,
+        options: { configNames, limit, runs },
+        phases: {},
+    };
+    const saveState = () => {
+        fs.mkdirSync(runDir, { recursive: true });
+        fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
+    };
+
+    // Estimate before anything is sent: the outputs, then the judging.
     let estimateUsd = 0;
-    if (usesModel) {
-        for (const config of Object.values(configs)) {
-            for (const testCase of cases) {
+    for (const config of Object.values(configs)) {
+        for (const testCase of cases) {
+            if (usesModel) {
                 const e = evalModule.estimate(testCase, config);
+                estimateUsd += costOf(e, e.model, { batch }) * runs;
+            }
+            if (usesJudge) {
+                const e = evalModule.estimateJudge(testCase);
                 estimateUsd += costOf(e, e.model, { batch }) * runs;
             }
         }
     }
     log(
         `${evalName}: ${cases.length} case(s) x ${Object.keys(configs).length} config(s) x ${runs} run(s), ` +
-            `mode ${mode}, estimated US$${estimateUsd.toFixed(4)}`,
+            `mode ${mode}${usesJudge ? " + judge" : ""}, estimated US$${estimateUsd.toFixed(4)}` +
+            (resumeState ? ` (resuming run ${runId})` : ""),
     );
 
-    const verdict = checkBudget(estimateUsd, budgetUsd, { yes });
-    if (verdict.message) log(verdict.message);
-    if (!verdict.ok) return { aborted: true, estimateUsd };
-
-    if (usesModel && !client) {
-        throw new Error("ANTHROPIC_API_KEY is not set; this eval calls the model.");
+    if (!resumeState) {
+        const verdict = checkBudget(estimateUsd, budgetUsd, { yes });
+        if (verdict.message) log(verdict.message);
+        if (!verdict.ok) return { aborted: true, estimateUsd };
     }
 
+    if ((usesModel || usesJudge) && !client) {
+        throw new Error("ANTHROPIC_API_KEY is not set; this eval calls the model.");
+    }
+    if (batch) {
+        saveState();
+        log(`state: ${stateFile} (resume with --resume ${runId})`);
+    }
+
+    const jobs = [];
+    for (const [configName, config] of Object.entries(configs)) {
+        for (const testCase of cases) {
+            for (let run = 0; run < runs; run++) {
+                jobs.push({ id: jobId(configName, testCase.id, run), configName, config, testCase, run });
+            }
+        }
+    }
+
+    // 1. Produce an output for every job.
     const fromMessage = (message, testCase, config) => ({
         output: evalModule.parse(message, testCase, config),
         usage: message.usage,
@@ -108,34 +191,20 @@ async function runEval({
             runs,
             concurrency,
             runOne: async (testCase, config) => {
-                const message = await client.messages.create(
-                    evalModule.request(testCase, config),
-                );
+                const message = await client.messages.create(evalModule.request(testCase, config));
                 return fromMessage(message, testCase, config);
             },
         });
     } else {
-        const jobs = [];
-        for (const [configName, config] of Object.entries(configs)) {
-            for (const testCase of cases) {
-                for (let run = 0; run < runs; run++) {
-                    jobs.push({
-                        id: `${configName}__${testCase.id}__${run}`,
-                        configName,
-                        config,
-                        testCase,
-                        run,
-                    });
-                }
-            }
-        }
-        const { results: byId } = await runBatch({
+        const byId = await batchPhase({
             client,
+            state,
+            phase: "produce",
             requests: jobs.map((j) => ({ id: j.id, params: evalModule.request(j.testCase, j.config) })),
+            saveState,
+            log,
             pollMs,
             sleep,
-            onProgress: (b) =>
-                log(`batch ${b.id}: ${b.processing_status} ${JSON.stringify(b.request_counts ?? {})}`),
         });
         results = jobs.map((j) => {
             const entry = byId.get(j.id);
@@ -149,33 +218,87 @@ async function runEval({
         });
     }
 
-    // Score everything that produced an output.
+    // 2. Grade every output that exists.
     const caseById = new Map(cases.map((c) => [c.id, c]));
-    for (const r of results) {
-        if (r.error) continue;
-        try {
-            r.scores = await evalModule.score(caseById.get(r.caseId), r.output, configs[r.config]);
-        } catch (error) {
-            r.error = `scoring failed: ${error.message}`;
+    const gradable = results.filter((r) => !r.error);
+
+    const applyJudgement = (r, message) => {
+        r.judgeCostUsd = costOf(message.usage, message.model, { batch });
+        r.costUsd = (r.costUsd ?? 0) + r.judgeCostUsd;
+        const { scores, judgement } = evalModule.scoreJudgement(message, caseById.get(r.caseId));
+        r.scores = scores;
+        r.judgement = judgement;
+    };
+
+    if (usesJudge && batch) {
+        const byId = await batchPhase({
+            client,
+            state,
+            phase: "judge",
+            requests: gradable.map((r) => ({
+                id: jobId(r.config, r.caseId, r.run),
+                params: evalModule.judge(caseById.get(r.caseId), r.output),
+            })),
+            saveState,
+            log,
+            pollMs,
+            sleep,
+        });
+        for (const r of gradable) {
+            const entry = byId.get(jobId(r.config, r.caseId, r.run));
+            if (entry.error) {
+                r.error = `judging failed: ${entry.error}`;
+                continue;
+            }
+            try {
+                applyJudgement(r, entry.message);
+            } catch (error) {
+                r.error = `judging failed: ${error.message}`;
+            }
+        }
+    } else if (usesJudge) {
+        await runCases({
+            cases: gradable.map((r) => ({ id: jobId(r.config, r.caseId, r.run), r })),
+            configs: { judge: {} },
+            concurrency,
+            runOne: async ({ r }) => {
+                try {
+                    const message = await client.messages.create(evalModule.judge(caseById.get(r.caseId), r.output));
+                    applyJudgement(r, message);
+                } catch (error) {
+                    r.error = `judging failed: ${error.message}`;
+                }
+                return {};
+            },
+        });
+    } else {
+        for (const r of gradable) {
+            try {
+                r.scores = await evalModule.score(caseById.get(r.caseId), r.output, configs[r.config]);
+            } catch (error) {
+                r.error = `scoring failed: ${error.message}`;
+            }
         }
     }
 
     const summary = summarise(results);
     log(`\n${formatTable(summary)}\n`);
 
-    const file = writeResults(path.join(resultsDir, evalName), {
+    const file = writeResults(runDir, {
         eval: evalName,
+        runId,
         mode,
         startedAt,
         pricing: { source: SOURCE, checkedOn: CHECKED_ON },
         estimateUsd,
         configs,
+        batches: state.phases,
         summary,
         results,
     });
     log(`results: ${file}`);
 
-    return { aborted: false, summary, results, file, estimateUsd };
+    return { aborted: false, summary, results, file, estimateUsd, runId };
 }
 
 module.exports = { runEval };
