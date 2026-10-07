@@ -54,6 +54,13 @@ renders a PDF next to the JSON, and saves the case as unreviewed. The review
 tool shows each one with its planted problems; approving stamps the reviewer
 and date, and only approved cases are used in runs.
 
+Each case is reviewed in one of four configurations (`resume-review/request.js`):
+effort `medium` or `high`, with the resume sent as extracted text or as the
+PDF itself. The request is built by the product's own `buildRequest`, so the
+eval measures the real prompt, including the product's cap on how much resume
+text reaches it. Because that module loads the product's configuration, this
+eval needs the backend `.env` in place.
+
 A generated resume can still contain a problem that was not planned. Recall
 is measured on the planted problems only, so this does not skew it, but a
 reviewer should reject a case where an unplanned problem is glaring.

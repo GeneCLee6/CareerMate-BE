@@ -185,7 +185,7 @@ unchecked judge are not reported as results.
 - [x] <!--e6-t01--> Harness skeleton: `evals/` layout, `run.js` CLI, concurrency-limited runner, results file, summary table, `pricing.js`, budget guard, `evals/results/` gitignored, evals excluded from jest. Message Batches submission and polling, with `--sync` for trial runs. Proven with a trivial "echo" eval that needs no API · AC-E6.1, AC-E6.2, AC-E6.3 · repo: BE · done in: BE#29 · learn: what an eval is — dataset, case, output, grader, metric; why evals are run by hand; batch vs live requests
 - [x] <!--e6-t02--> Issue taxonomy and dataset schema: the owner writes the list of resume problems worth catching (with a definition and an example each); zod schema for a resume case; schema test in `npm test` · AC-E6.3 · repo: BE · done in: BE#30 · learn: defining quality before measuring it; why the taxonomy is a product decision, not a technical one
 - [x] <!--e6-t03--> Synthetic resume generator: a script that asks Claude for a resume with given planted issues and renders it to PDF; the owner reviews every generated resume and keeps at least 12 · AC-E6.4 · repo: BE · done in: BE#31, reviewed in this PR · learn: synthetic data and its limits; why every generated case is read by a human
-- [ ] <!--e6-t04--> Resume input mode: the product's request builder takes `resumeInput: "text" | "pdf"` (default `text`, product behaviour unchanged) and sends the PDF as a document block when asked; the eval calls this builder · AC-E6.4 · repo: BE · learn: document blocks and what the model sees in each mode; why an eval must call the real code path
+- [x] <!--e6-t04--> Resume input mode: the product's request builder takes `resumeInput: "text" | "pdf"` (default `text`, product behaviour unchanged) and sends the PDF as a document block when asked; the eval calls this builder · AC-E6.4 · repo: BE · done in: this PR · learn: document blocks and what the model sees in each mode; why an eval must call the real code path
 - [ ] <!--e6-t05--> The judge: `rubric.md` written by the owner, `llmJudge.js` with structured output, blind to configuration, on Claude Sonnet 5; `eval:resume-review` runs stage 1 · AC-E6.4 · repo: BE · learn: LLM-as-judge, rubrics with anchored scores, structured outputs, blinding
 - [ ] <!--e6-t06--> Hand labels and agreement: a small labelling script that shows one review at a time and records the owner's verdicts; agreement rate computed and printed with every result · AC-E6.5 · repo: BE · learn: validating a grader; agreement rate; why an unchecked LLM judge is not evidence
 - [ ] <!--e6-t07--> Run, read, decide: a full valid run; the decision and its numbers written into `ARCHITECTURE.md` §5 · AC-E6.6 · repo: BE · learn: reading an eval table — averages, spread, cost per point of quality; when a difference is real
@@ -275,3 +275,8 @@ First met in `e6-t10`.
   a "too long" resume that was two pages — then reviewed every case by hand
   before any was used. Made batch runs resumable after a stopped process
   would otherwise have paid twice for finished work.
+- `e6-t04`: let the product send a resume as the PDF itself instead of
+  extracted text, and had the eval call the product's own request builder
+  so it measures the real prompt. Counting tokens showed a PDF costs 2.2x
+  to 3.5x the text, and that text mode silently truncates long resumes —
+  a product limit the eval now measures rather than hides.

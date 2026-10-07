@@ -20,16 +20,22 @@ async function runBatch({
     onSubmitted = () => {},
     sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
 }) {
-    if (requests.some((r) => r.params.betas)) {
-        // Beta features go through a different batches endpoint. None of the
-        // evals uses one yet; the first that does (e6-t04) adds support.
-        throw new Error(
-            "Batched requests with `betas` are not supported yet; run with --sync.",
-        );
+    // Beta features are declared once for the whole batch, not per request,
+    // and go through the beta batches endpoint. So every request must ask for
+    // the same ones, and they are lifted out of each request's parameters.
+    const betaSets = new Set(requests.map((r) => JSON.stringify(r.params.betas ?? [])));
+    if (betaSets.size > 1) {
+        throw new Error("Every request in a batch must use the same `betas`.");
     }
+    const betas = requests[0]?.params.betas;
+    const api = betas ? client.beta.messages.batches : client.messages.batches;
 
-    const created = await client.messages.batches.create({
-        requests: requests.map((r) => ({ custom_id: r.id, params: r.params })),
+    const created = await api.create({
+        requests: requests.map((r) => {
+            const { betas: _ignored, ...params } = r.params;
+            return { custom_id: r.id, params };
+        }),
+        ...(betas ? { betas } : {}),
     });
     onSubmitted(created.id);
 
@@ -37,6 +43,7 @@ async function runBatch({
         client,
         batchId: created.id,
         ids: requests.map((r) => r.id),
+        beta: Boolean(betas),
         pollMs,
         onProgress,
         sleep,
@@ -46,27 +53,30 @@ async function runBatch({
 
 /**
  * Waits for an existing batch to end and returns its results, keyed by
- * custom_id. Sends no new requests and costs nothing more.
+ * custom_id. Sends no new requests and costs nothing more. `beta` must match
+ * how the batch was created.
  */
 async function collectBatch({
     client,
     batchId,
     ids,
+    beta = false,
     pollMs = 30_000,
     onProgress = () => {},
     sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     first,
 }) {
-    let batch = first ?? (await client.messages.batches.retrieve(batchId));
+    const api = beta ? client.beta.messages.batches : client.messages.batches;
+    let batch = first ?? (await api.retrieve(batchId));
     while (batch.processing_status !== "ended") {
         onProgress(batch);
         await sleep(pollMs);
-        batch = await client.messages.batches.retrieve(batchId);
+        batch = await api.retrieve(batchId);
     }
     onProgress(batch);
 
     const byId = new Map();
-    for await (const entry of await client.messages.batches.results(batchId)) {
+    for await (const entry of await api.results(batchId)) {
         const { type } = entry.result;
         if (type === "succeeded") {
             byId.set(entry.custom_id, { message: entry.result.message });
