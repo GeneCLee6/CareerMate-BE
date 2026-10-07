@@ -178,10 +178,36 @@ describe("runBatch", () => {
         expect(results.get("one").message.content[0].text).toBe("1");
     });
 
-    it("refuses beta requests it cannot yet send", async () => {
+    it("sends beta requests through the beta endpoint, with betas lifted to the batch", async () => {
+        const betaApi = fakeBatchClient([
+            { custom_id: "x", result: { type: "succeeded", message: message("ok") } },
+        ]).messages.batches;
+        const client = { messages: { batches: { create: jest.fn() } }, beta: { messages: { batches: betaApi } } };
+
+        const { results } = await runBatch({
+            client,
+            requests: [{ id: "x", params: { model: "claude-opus-5", betas: ["b-1"], fallbacks: "default" } }],
+            sleep: async () => {},
+        });
+
+        expect(client.messages.batches.create).not.toHaveBeenCalled();
+        expect(betaApi.create).toHaveBeenCalledWith({
+            requests: [{ custom_id: "x", params: { model: "claude-opus-5", fallbacks: "default" } }],
+            betas: ["b-1"],
+        });
+        expect(results.get("x").message.content[0].text).toBe("ok");
+    });
+
+    it("refuses a batch whose requests ask for different betas", async () => {
         await expect(
-            runBatch({ client: fakeBatchClient([]), requests: [{ id: "x", params: { betas: ["b"] } }] }),
-        ).rejects.toThrow(/--sync/);
+            runBatch({
+                client: fakeBatchClient([]),
+                requests: [
+                    { id: "a", params: { betas: ["b-1"] } },
+                    { id: "b", params: {} },
+                ],
+            }),
+        ).rejects.toThrow(/same `betas`/);
     });
 });
 

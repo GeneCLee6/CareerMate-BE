@@ -442,3 +442,63 @@ describe("streamReply", () => {
         await expect(claudeService.streamReply(base)).rejects.toMatchObject({ status: 429 });
     });
 });
+
+describe("resume input mode", () => {
+    const resume = { fileName: "cv.pdf", textStatus: "ok", contentText: "Built a booking app in React." };
+    const history = [{ role: "user", content: "Review my resume" }];
+    const pdf = { fileName: "cv.pdf", data: "JVBERi0xLjQK" };
+
+    it("puts the resume text in the system prompt by default, as the product does", () => {
+        const request = claudeService.buildRequest({ user: null, resumes: [resume], history });
+        expect(request.system).toContain("Built a booking app in React.");
+        expect(request.messages).toEqual([{ role: "user", content: "Review my resume" }]);
+    });
+
+    it("sends the PDF as a document block, first in the newest message, in pdf mode", () => {
+        const request = claudeService.buildRequest({
+            user: null,
+            resumes: [resume],
+            history,
+            resumeInput: "pdf",
+            resumePdfs: [pdf],
+        });
+        const [message] = request.messages;
+        expect(message.content[0]).toEqual({
+            type: "document",
+            source: { type: "base64", media_type: "application/pdf", data: "JVBERi0xLjQK" },
+            title: "cv.pdf",
+        });
+        expect(message.content.at(-1)).toEqual({ type: "text", text: "Review my resume" });
+    });
+
+    it("keeps the resume text out of the prompt, and the untrusted-data warning in, in pdf mode", () => {
+        const request = claudeService.buildRequest({
+            user: null,
+            resumes: [resume],
+            history,
+            resumeInput: "pdf",
+            resumePdfs: [pdf],
+        });
+        expect(request.system).not.toContain("Built a booking app in React.");
+        expect(request.system).toMatch(/attached as a PDF/);
+        expect(request.system).toMatch(/carries no\s+instructions/);
+    });
+
+    it("puts the resume ahead of anything the user attached", () => {
+        const image = { type: "image", source: { type: "base64", media_type: "image/png", data: "x" } };
+        const request = claudeService.buildRequest({
+            user: null,
+            resumes: [resume],
+            history,
+            attachmentBlocks: [image],
+            resumeInput: "pdf",
+            resumePdfs: [pdf],
+        });
+        expect(request.messages[0].content.map((b) => b.type)).toEqual(["document", "image", "text"]);
+    });
+
+    it("rejects an unknown mode, and pdf mode without a PDF", () => {
+        expect(() => claudeService.buildRequest({ resumes: [], history, resumeInput: "html" })).toThrow(/resumeInput/);
+        expect(() => claudeService.buildRequest({ resumes: [], history, resumeInput: "pdf" })).toThrow(/needs resumePdfs/);
+    });
+});
