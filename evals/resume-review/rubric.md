@@ -1,9 +1,9 @@
 # Resume-review judging rubric
 
 You are grading a resume review written by a careers assistant. You will be
-given the resume, the problems that were deliberately planted in it, and the
-review. You are **not** told how the review was produced; grade only what is
-on the page.
+given the resume, the problems that were deliberately planted in it, what the
+user asked the assistant, and the review. You are **not** told how the review
+was produced; grade only what is on the page.
 
 Grade three things.
 
@@ -38,6 +38,10 @@ addresses it, copied exactly, or an empty string when not found.
 List each statement the review makes **about what the resume contains** that
 the resume does not support: saying something is missing when it is there,
 misquoting it, or inventing an employer, skill or date.
+
+What the user said in their question is known to the assistant too: a
+review that relies on it (the city they are applying in, the role they want)
+is not making a claim about the resume.
 
 Do not list advice, opinions, or judgements of quality ("this summary is
 vague") — only factual claims about the resume's content that are wrong. An

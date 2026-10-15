@@ -1,11 +1,22 @@
 const { loadCases } = require("./dataset");
-const { judgeContent, judgeReview, scoreJudgement, SCHEMA } = require("./judge");
+const { judgeContent, judgeReview, scoreJudgement, schemaFor } = require("./judge");
 const { CONFIGS } = require("./request");
 
 const testCase = loadCases().find((c) => c.id === "r01");
+// Verdicts arrive keyed by issue id, as the per-case schema requires.
 const verdict = (issues, extra = {}) => ({
     stop_reason: "end_turn",
-    content: [{ type: "text", text: JSON.stringify({ issues, unsupportedClaims: [], specificity: 4, ...extra }) }],
+    content: [
+        {
+            type: "text",
+            text: JSON.stringify({
+                issues: Object.fromEntries(issues.map(({ id, ...v }) => [id, v])),
+                unsupportedClaims: [],
+                specificity: 4,
+                ...extra,
+            }),
+        },
+    ],
 });
 
 describe("resume-review judge", () => {
@@ -14,6 +25,8 @@ describe("resume-review judge", () => {
         expect(content).toContain(testCase.resumeText.slice(0, 40));
         for (const p of testCase.plantedIssues) expect(content).toContain(`<problem id="${p.issue}">`);
         expect(content).toContain("<review>\nAdd numbers to your bullets.\n</review>");
+        // What the user said is not the review inventing it.
+        expect(content).toMatch(/<question>\n.*Melbourne.*\n<\/question>/);
     });
 
     it("never tells the judge which configuration wrote the review", () => {
@@ -25,7 +38,7 @@ describe("resume-review judge", () => {
     it("uses Sonnet 5 at high effort, with structured output", () => {
         const request = judgeReview(testCase, "A review.");
         expect(request.model).toBe("claude-sonnet-5");
-        expect(request.output_config).toEqual({ effort: "high", format: { type: "json_schema", schema: SCHEMA } });
+        expect(request.output_config).toEqual({ effort: "high", format: { type: "json_schema", schema: schemaFor(testCase) } });
     });
 
     it("turns a verdict into recall, unsupported claims and specificity", () => {
@@ -43,6 +56,14 @@ describe("resume-review judge", () => {
             unsupportedClaims: 1,
             specificity: 4,
         });
+    });
+
+    it("lets the judge grade exactly this case's planted problems, all required", () => {
+        const { issues } = schemaFor(testCase).properties;
+        const planted = testCase.plantedIssues.map((p) => p.issue);
+        expect(Object.keys(issues.properties)).toEqual(planted);
+        expect(issues.required).toEqual(planted);
+        expect(issues.additionalProperties).toBe(false);
     });
 
     it("refuses a verdict that does not cover exactly the planted problems", () => {

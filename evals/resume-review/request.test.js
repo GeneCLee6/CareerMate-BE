@@ -11,7 +11,7 @@ const { buildRequest, MODEL } = require("../../src/chat/claude.service");
 const testCase = loadCases().find((c) => c.id === "r01");
 
 describe("reviewRequest", () => {
-    it("is the product's own request, with only effort changed", () => {
+    it("is the product's own request, with only effort changed and the fallback dropped", () => {
         const request = reviewRequest(testCase, CONFIGS["high-text"]);
         const product = buildRequest({
             user: { goal: `${testCase.persona.targetRole} in ${testCase.persona.location}` },
@@ -19,9 +19,12 @@ describe("reviewRequest", () => {
             history: [{ role: "user", content: reviewQuestion(testCase) }],
         });
 
-        expect(request).toEqual({ ...product, output_config: { ...product.output_config, effort: "high" } });
+        const { betas, fallbacks, ...rest } = product;
+        expect(request).toEqual({ ...rest, output_config: { ...product.output_config, effort: "high" } });
         expect(request.model).toBe(MODEL);
-        expect(request.fallbacks).toBe("default");
+        // The Batches API rejects `fallbacks`.
+        expect(request).not.toHaveProperty("fallbacks");
+        expect(request).not.toHaveProperty("betas");
     });
 
     it("asks what a user would ask, for this applicant", () => {

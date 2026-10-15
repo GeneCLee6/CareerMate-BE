@@ -28,6 +28,11 @@ function reviewQuestion(testCase) {
  * that could drift from them. Only effort is overridden, because effort is
  * what the eval varies.
  *
+ * The server-side fallback is dropped: the Batches API rejects `fallbacks`.
+ * It only acts when the model declines on policy grounds, which a resume
+ * review should not trigger; if one does, `parse` reports the refusal as an
+ * error rather than scoring it.
+ *
  * In text mode the product's limits apply as they do for users, including
  * the cap on how much resume text reaches the prompt.
  */
@@ -53,7 +58,8 @@ function reviewRequest(testCase, config, { casesDir = CASES_DIR } = {}) {
         resumeInput: config.resumeInput,
         resumePdfs,
     });
-    return { ...request, output_config: { ...request.output_config, effort: config.effort } };
+    const { betas: _betas, fallbacks: _fallbacks, ...batchable } = request;
+    return { ...batchable, output_config: { ...request.output_config, effort: config.effort } };
 }
 
 module.exports = { CONFIGS, reviewQuestion, reviewRequest };

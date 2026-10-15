@@ -2,44 +2,54 @@ const fs = require("fs");
 const path = require("path");
 const { ISSUES } = require("./taxonomy");
 const { judgeRequest, parseJudgement } = require("../graders/llmJudge");
+const { reviewQuestion } = require("./request");
 
 const RUBRIC = fs.readFileSync(path.join(__dirname, "rubric.md"), "utf-8");
 const issueById = Object.fromEntries(ISSUES.map((i) => [i.id, i]));
 
-const SCHEMA = {
-    type: "object",
-    properties: {
-        issues: {
-            type: "array",
-            items: {
+/**
+ * The verdict's shape for one case. `issues` has a required property for each
+ * problem planted in this case and no other, so the judge cannot grade a
+ * problem that is not there or skip one that is — the structure enforces it,
+ * rather than the prompt asking for it.
+ */
+function schemaFor(testCase) {
+    const verdict = {
+        type: "object",
+        properties: { found: { type: "boolean" }, evidence: { type: "string" } },
+        required: ["found", "evidence"],
+        additionalProperties: false,
+    };
+    const ids = testCase.plantedIssues.map((p) => p.issue);
+    return {
+        type: "object",
+        properties: {
+            issues: {
                 type: "object",
-                properties: {
-                    id: { type: "string", enum: ISSUES.map((i) => i.id) },
-                    found: { type: "boolean" },
-                    evidence: { type: "string" },
+                properties: Object.fromEntries(ids.map((id) => [id, verdict])),
+                required: ids,
+                additionalProperties: false,
+            },
+            unsupportedClaims: {
+                type: "array",
+                items: {
+                    type: "object",
+                    properties: { claim: { type: "string" }, why: { type: "string" } },
+                    required: ["claim", "why"],
+                    additionalProperties: false,
                 },
-                required: ["id", "found", "evidence"],
-                additionalProperties: false,
             },
+            specificity: { type: "integer", enum: [1, 2, 3, 4, 5] },
         },
-        unsupportedClaims: {
-            type: "array",
-            items: {
-                type: "object",
-                properties: { claim: { type: "string" }, why: { type: "string" } },
-                required: ["claim", "why"],
-                additionalProperties: false,
-            },
-        },
-        specificity: { type: "integer", enum: [1, 2, 3, 4, 5] },
-    },
-    required: ["issues", "unsupportedClaims", "specificity"],
-    additionalProperties: false,
-};
+        required: ["issues", "unsupportedClaims", "specificity"],
+        additionalProperties: false,
+    };
+}
 
 /**
- * What the judge reads: the resume, what was planted in it, and the review.
- * The configuration that produced the review is deliberately absent.
+ * What the judge reads: the resume, what was planted in it, what the user
+ * asked, and the review. The question is the same in every configuration;
+ * the configuration that produced the review is deliberately absent.
  */
 function judgeContent(testCase, reviewText) {
     const planted = testCase.plantedIssues
@@ -66,16 +76,20 @@ function judgeContent(testCase, reviewText) {
         planted,
         "</planted_problems>",
         "",
+        "<question>",
+        reviewQuestion(testCase),
+        "</question>",
+        "",
         "<review>",
         reviewText,
         "</review>",
         "",
-        "Grade the review against the rubric. Give one entry in `issues` for each planted problem, in the order listed.",
+        "Grade the review against the rubric. In `issues`, give a verdict for each planted problem, keyed by its id.",
     ].join("\n");
 }
 
 function judgeReview(testCase, reviewText) {
-    return judgeRequest({ rubric: RUBRIC, content: judgeContent(testCase, reviewText), schema: SCHEMA });
+    return judgeRequest({ rubric: RUBRIC, content: judgeContent(testCase, reviewText), schema: schemaFor(testCase) });
 }
 
 /**
@@ -84,7 +98,11 @@ function judgeReview(testCase, reviewText) {
  * than a silently wrong score.
  */
 function scoreJudgement(message, testCase) {
-    const judgement = parseJudgement(message);
+    const verdict = parseJudgement(message);
+    const judgement = {
+        ...verdict,
+        issues: Object.entries(verdict.issues).map(([id, v]) => ({ id, ...v })),
+    };
     const planted = testCase.plantedIssues.map((p) => p.issue).sort();
     const judged = judgement.issues.map((i) => i.id).sort();
     if (planted.join(",") !== judged.join(",")) {
@@ -101,4 +119,4 @@ function scoreJudgement(message, testCase) {
     };
 }
 
-module.exports = { RUBRIC, SCHEMA, judgeContent, judgeReview, scoreJudgement };
+module.exports = { RUBRIC, schemaFor, judgeContent, judgeReview, scoreJudgement };

@@ -27,6 +27,7 @@ npm run eval -- <name>                     # a full run, batched
 | *(default)* | Send through the Message Batches API: half price, results in minutes |
 | `--yes` | Run even when the estimate is over the budget |
 | `--concurrency N` | Live requests in flight at once (default 4) |
+| `--resume ID` | Continue a batched run that stopped: collect the batches it already submitted instead of paying again |
 
 Before sending anything, the runner estimates the cost and stops if it is
 over `EVAL_BUDGET_USD` (default US$5). The key comes from
@@ -35,6 +36,24 @@ over `EVAL_BUDGET_USD` (default US$5). The key comes from
 Each run prints a table — one row per configuration — and writes everything
 to `evals/results/<name>/<timestamp>.json` (gitignored): the commit, the
 configurations, every output and score, tokens and estimated cost.
+
+A batched run saves each batch id to `<timestamp>.state.json` the moment it
+is submitted. If the process stops, `--resume <timestamp>` collects what the
+server already did. Deleting a phase from that file and resuming re-runs only
+that phase — for instance, re-judging after a rubric change without paying
+for the reviews again.
+
+## Judging with a model
+
+`npm run eval:resume-review -- --configs medium-text,high-text` runs stage 1.
+Each review is graded by Claude Sonnet 5 at high effort against
+`resume-review/rubric.md`, with structured output whose shape is built per
+case: one required verdict for each planted problem and no others. The judge
+sees the resume, the planted problems, the user's question and the review —
+never the configuration that wrote it.
+
+A judge is a model and makes mistakes. Its scores are provisional until it
+agrees with the owner's hand labels (e6-t06).
 
 ## The resume-review dataset
 
@@ -78,6 +97,8 @@ evals/
 │   ├── cost.js         tokens × price
 │   ├── budget.js       the spend guard
 │   └── report.js       summary table and results file
+├── graders/
+│   └── llmJudge.js     a structured-output judge request, and its parsing
 ├── resume-review/     the first real eval
 │   ├── taxonomy.js     the resume problems it checks for
 │   ├── schema.js       what a test case must look like
@@ -85,7 +106,11 @@ evals/
 │   ├── plan.js         which resumes to generate, with which problems
 │   ├── generate.js     generates them (structured output) and renders PDFs
 │   ├── render.js       plain text to PDF
-│   └── review.js       the owner's review, one case at a time
+│   ├── review.js       the owner's review, one case at a time
+│   ├── request.js      the configurations, and each case as the product's request
+│   ├── rubric.md       how the judge grades a review
+│   ├── judge.js        the judge's input, schema and scoring
+│   └── eval.js         the eval itself
 ├── <name>/eval.js      one eval
 └── datasets/<name>/    its cases
 ```
