@@ -1,7 +1,8 @@
+const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const { ISSUES } = require("./taxonomy");
-const { judgeRequest, parseJudgement } = require("../graders/llmJudge");
+const { JUDGE_MODEL, judgeRequest, parseJudgement } = require("../graders/llmJudge");
 const { reviewQuestion } = require("./request");
 
 const RUBRIC = fs.readFileSync(path.join(__dirname, "rubric.md"), "utf-8");
@@ -119,4 +120,21 @@ function scoreJudgement(message, testCase) {
     };
 }
 
-module.exports = { RUBRIC, schemaFor, judgeContent, judgeReview, scoreJudgement };
+/**
+ * Identifies this judge: its model, rubric, schema and prompt. A check
+ * against hand labels holds for this fingerprint only; change any of them
+ * and the judge must be checked again. Line endings are normalised so the
+ * fingerprint is the same on every machine.
+ */
+const JUDGE_FINGERPRINT = crypto
+    .createHash("sha256")
+    .update(
+        [JUDGE_MODEL, RUBRIC, schemaFor, judgeContent, reviewQuestion, judgeRequest]
+            .map(String)
+            .join("\n")
+            .replace(/\r\n/g, "\n"),
+    )
+    .digest("hex")
+    .slice(0, 12);
+
+module.exports = { RUBRIC, JUDGE_FINGERPRINT, schemaFor, judgeContent, judgeReview, scoreJudgement };

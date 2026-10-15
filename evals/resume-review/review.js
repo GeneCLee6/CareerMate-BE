@@ -112,4 +112,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { approve };
+module.exports = { approve, reviewerName, today };

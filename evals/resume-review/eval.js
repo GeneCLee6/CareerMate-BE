@@ -10,12 +10,14 @@
  *
  *     npm run eval:resume-review -- --configs medium-text,high-text   # stage 1
  *
- * The judge's scores count only once it agrees with the owner's hand labels
- * (e6-t06). Until then, treat them as provisional.
+ * The judge's scores count only once it agrees with the owner's hand labels:
+ * each run prints the last check and is marked not valid without one (see
+ * label.js and agreement.js).
  */
 const { loadCases } = require("./dataset");
 const { CONFIGS, reviewRequest } = require("./request");
-const { judgeReview, scoreJudgement } = require("./judge");
+const { judgeReview, scoreJudgement, JUDGE_FINGERPRINT } = require("./judge");
+const { judgeValidity, describeValidity } = require("./agreement");
 const { JUDGE_MODEL } = require("../graders/llmJudge");
 const { extractText, MODEL } = require("../../src/chat/claude.service");
 
@@ -49,6 +51,10 @@ module.exports = {
     judge: (testCase, review) => judgeReview(testCase, review),
 
     scoreJudgement,
+
+    judgeFingerprint: JUDGE_FINGERPRINT,
+    judgeValidity: () => judgeValidity(JUDGE_FINGERPRINT),
+    describeValidity,
 
     estimateJudge: (testCase) => ({
         model: JUDGE_MODEL,
