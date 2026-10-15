@@ -27,6 +27,9 @@ const { SOURCE, CHECKED_ON } = require("../pricing");
  *   `scoreJudgement(message, case)` → { scores, judgement } and
  *   `estimateJudge(case)` → { model, input_tokens, output_tokens }.
  *   The judge is never given the configuration: it grades blind.
+ *   Optionally `judgeFingerprint`, `judgeValidity()` → { valid, reason }
+ *   and `describeValidity(validity)` → string, which say whether the judge
+ *   has been checked against hand labels; the run prints and records them.
  *
  * Batched runs save their batch ids in a state file as they are submitted,
  * so a run that stops can be resumed (`resumeState`) without paying again
@@ -284,6 +287,11 @@ async function runEval({
     const summary = summarise(results);
     log(`\n${formatTable(summary)}\n`);
 
+    // Scores from a judge are only as good as the judge: say whether it has
+    // been checked against hand labels, every time they are shown.
+    const validity = usesJudge && evalModule.judgeValidity ? evalModule.judgeValidity() : null;
+    if (validity) log(`${evalModule.describeValidity(validity)}\n`);
+
     const file = writeResults(runDir, {
         eval: evalName,
         runId,
@@ -293,6 +301,15 @@ async function runEval({
         estimateUsd,
         configs,
         batches: state.phases,
+        ...(evalModule.judgeFingerprint ? { judgeFingerprint: evalModule.judgeFingerprint } : {}),
+        ...(validity && {
+            validity: {
+                valid: validity.valid,
+                reason: validity.reason,
+                agreement: validity.check?.agreement ?? null,
+                reviews: validity.check?.reviews ?? 0,
+            },
+        }),
         summary,
         results,
     });

@@ -52,8 +52,31 @@ case: one required verdict for each planted problem and no others. The judge
 sees the resume, the planted problems, the user's question and the review —
 never the configuration that wrote it.
 
-A judge is a model and makes mistakes. Its scores are provisional until it
-agrees with the owner's hand labels (e6-t06).
+A judge is a model and makes mistakes, so it is checked against a person:
+
+```bash
+npm run eval:label-reviews       # label reviews from the newest run, one at a time
+npm run eval:judge-agreement     # compare those labels with the run's judge (no API calls)
+```
+
+The labelling tool shows each review with the problems planted in its
+resume, and asks the owner, for each problem, whether the review found it.
+It is blind: neither the judge's verdict nor the configuration is shown, and
+reviews come in an order unrelated to either. Labels are saved to
+`datasets/resume-review/labels.json` with the full review text, after every
+answer.
+
+The agreement check compares the labels with the judge's verdicts on the same
+reviews and prints the agreement rate, Cohen's kappa (agreement corrected for
+chance — a judge that always says "found" can agree often and still be no
+better than chance) and every disagreement. It needs at least 20 labelled
+reviews and 80% agreement, and saves the result with the judge's fingerprint
+— a hash of its model, rubric, schema and prompt — to
+`datasets/resume-review/judge-check.json`.
+
+Every run prints that check under its table and records it in the results
+file. A run is **not valid** when the judge has never been checked, fell
+below the threshold, or has changed since its check.
 
 ## The resume-review dataset
 
@@ -110,6 +133,9 @@ evals/
 │   ├── request.js      the configurations, and each case as the product's request
 │   ├── rubric.md       how the judge grades a review
 │   ├── judge.js        the judge's input, schema and scoring
+│   ├── labels.js       the owner's hand labels
+│   ├── label.js        labels reviews from a run, one at a time
+│   ├── agreement.js    checks the judge against the labels
 │   └── eval.js         the eval itself
 ├── <name>/eval.js      one eval
 └── datasets/<name>/    its cases

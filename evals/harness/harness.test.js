@@ -429,6 +429,29 @@ describe("runEval with a judge", () => {
         expect(outcome.summary[0].metrics.good).toBe(1);
     });
 
+    it("prints and records whether the judge has been checked, with every run", async () => {
+        const lines = [];
+        const create = jest.fn().mockResolvedValueOnce(message("answer")).mockResolvedValueOnce(judged({ good: 1 }));
+        const outcome = await runEval({
+            evalModule: {
+                ...judgeEval,
+                judgeFingerprint: "fp1",
+                judgeValidity: () => ({ valid: false, reason: "not checked" }),
+                describeValidity: (v) => `judge check: ${v.valid ? "VALID" : `NOT VALID: ${v.reason}`}`,
+            },
+            evalName: "j",
+            sync: true,
+            budgetUsd: 5,
+            client: { messages: { create } },
+            resultsDir: tmpDir(),
+            log: (line) => lines.push(line),
+        });
+        expect(lines.join("\n")).toMatch(/judge check: NOT VALID: not checked/);
+        const saved = JSON.parse(fs.readFileSync(outcome.file, "utf-8"));
+        expect(saved.judgeFingerprint).toBe("fp1");
+        expect(saved.validity).toEqual({ valid: false, reason: "not checked", agreement: null, reviews: 0 });
+    });
+
     it("saves the batch id as soon as it is submitted", async () => {
         const dir = tmpDir();
         const client = fakeBatchClient([{ custom_id: "a__q1__0", result: { type: "errored", error: { type: "overloaded_error" } } }]);
